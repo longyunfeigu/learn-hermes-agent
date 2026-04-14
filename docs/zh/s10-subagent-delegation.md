@@ -248,9 +248,95 @@ delegation:
 
 这通过 `tool_progress_callback` 实现：子 agent 每执行一个工具，回调一次父 agent 的进度显示。
 
+**核心机制：** 主 agent 不是在循环里"拉取"子 agent 进度，而是子 agent 每执行一个工具时，通过创建时注入的回调函数"推送"进度到父 agent 的显示层。这是经典的观察者模式 / 事件回调模式，不需要轮询。
+
+用一个最简化的例子理解整个流程：
+
+```python
+# ① 定义"收到进度后做什么"
+def on_progress(event_type, tool_name, preview, args):
+    print(f"子 agent 正在用: {tool_name} — {preview}")
+
+# ② 创建子 agent 时，把这个函数"注入"进去
+child = AIAgent(
+    tool_progress_callback=on_progress,   # ← 注入回调
+)
+
+# ③ 子 agent 内部每次执行工具前，自动调用这个回调
+#    （这段代码在 AIAgent._handle_tool_calls 里，不需要你写）
+#    伪代码：
+for tool in tools_to_run:
+    self.tool_progress_callback("tool.started", tool.name, tool.preview, tool.args)
+    result = self.execute(tool)          # 实际执行工具
+    self.tool_progress_callback("tool.completed", tool.name, ...)
+```
+
+整个过程就三步：**定义回调 → 注入子 agent → 子 agent 执行时自动触发**。父 agent 不需要轮询，子 agent 也不需要知道进度展示给谁看——它只管调用回调，具体是打印到终端还是发到 Telegram，由回调函数的实现决定。
+
+**但为什么回调函数能在父 agent 的界面上显示东西？** 答案是闭包（closure）。回调函数在创建时就"捕获"了父 agent 的显示对象，之后无论谁调用它，操作的都是同一个对象：
+
+```python
+# 父 agent 侧：创建回调
+def make_callback(parent_spinner):
+    """spinner 被闭包捕获——函数记住了创建时的环境"""
+    
+    def callback(tool_name):
+        # 虽然这个函数将来在子 agent 里被调用，
+        # 但 parent_spinner 是创建时就"抓住"的父 agent 的对象
+        parent_spinner.print_above(f"├─ 🔍 {tool_name}")
+    
+    return callback
+```
+
+时间线：
+
+```text
+1. 父 agent 创建 spinner（显示在父的终端上）
+   spinner = KawaiiSpinner("⏳ 子 agent 工作中...")
+
+2. 父 agent 创建回调，把自己的 spinner 包进去
+   cb = make_callback(spinner)    # ← spinner 被闭包捕获
+
+3. 父 agent 把回调注入子 agent
+   child = AIAgent(tool_progress_callback=cb)
+
+4. 子 agent 执行工具时调用 cb("web_search")
+   → cb 内部执行 spinner.print_above("├─ 🔍 web_search")
+   → spinner 是父 agent 的！所以打印在父 agent 的终端上
+```
+
+子 agent 调用的是一个函数，但这个函数操作的是父 agent 的对象。父子 agent 在同一个进程里，共享内存，所以闭包捕获的 `spinner` 就是父 agent 正在显示的那个 spinner，不需要任何跨进程通信。
+
 ### 3. 心跳机制
 
-Gateway 模式下，平台有消息超时限制（比如 Telegram 的 typing 指示器会过期）。子 agent 执行时间可能很长，所以有一个心跳线程持续通知平台"agent 还在工作"。
+心跳机制解决的问题很具体：**Gateway 有一个"不活动超时"（默认 30 分钟），如果父 agent 长时间没有活动记录，Gateway 会认为它卡死了，直接杀掉。**
+
+父 agent 正常工作时，每次调 API、执行工具都会更新自己的活动时间戳（`_last_activity_ts`）。但当它派出子 agent 后，**父 agent 自己停下来等结果**，不再调任何工具——从 Gateway 的视角看，父 agent"没有活动"了。
+
+等子 agent 干完活（可能要好几分钟），Gateway 可能已经把父 agent 杀掉了。
+
+解决方法就是心跳——一个后台线程，每 30 秒替父 agent 说一声"我还活着"：
+
+```python
+# 本质就是一个循环，每 30 秒更新一次父 agent 的活动时间戳
+def _heartbeat_loop():
+    while not stop_event.wait(30):            # 每 30 秒醒一次
+        parent_agent._touch_activity("子 agent 还在干活")
+        #           ↑ 这行会更新 _last_activity_ts = time.time()
+        #             Gateway 看到时间戳在更新，就不会杀父 agent
+
+# 启动后台线程
+heartbeat_thread = threading.Thread(target=_heartbeat_loop, daemon=True)
+heartbeat_thread.start()
+
+# 子 agent 开始干活
+result = child.run_conversation(goal)
+
+# 子 agent 干完了，停掉心跳
+stop_event.set()
+```
+
+就这么多。心跳 = **一个每 30 秒执行 `_last_activity_ts = time.time()` 的后台线程**，目的是骗过 Gateway 的不活动检测，让它知道"父 agent 没卡死，只是在等子 agent"。
 
 ### 4. 凭据隔离
 

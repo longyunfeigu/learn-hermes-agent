@@ -1,0 +1,54 @@
+{
+  "meta": {
+    "title": "Learn Hermes Agent",
+    "description": "20 chapters, 4 stages — build a cross-platform autonomous AI Agent from scratch"
+  },
+  "nav": {
+    "home": "Home",
+    "reference": "Reference",
+    "github": "GitHub"
+  },
+  "home": {
+    "hero_title": "Learn Hermes Agent",
+    "hero_subtitle": "20 chapters, 4 stages — reverse-engineer the core architecture of Hermes Agent",
+    "start": "Start Learning",
+    "learning_path": "Learning Path"
+  },
+  "version": {
+    "prev": "Previous",
+    "next": "Next",
+    "tab_learn": "Learn",
+    "tab_code": "Code",
+    "tab_deep_dive": "Deep Dive",
+    "bridge_docs": "Further Reading"
+  },
+  "sessions": {
+    "s00": "Architecture Overview",
+    "s01": "Agent Loop",
+    "s02": "Tool System",
+    "s03": "Session Store",
+    "s04": "Prompt Builder",
+    "s05": "Context Compression",
+    "s06": "Error Recovery",
+    "s07": "Memory System",
+    "s08": "Skill System",
+    "s09": "Permission System",
+    "s10": "Subagent Delegation",
+    "s11": "Configuration System",
+    "s12": "Gateway Architecture",
+    "s13": "Platform Adapters",
+    "s14": "Terminal Backends",
+    "s15": "Cron Scheduler",
+    "s16": "MCP Integration",
+    "s17": "Browser Automation",
+    "s18": "Voice & Vision",
+    "s19": "CLI Interface",
+    "s20": "Full System"
+  },
+  "layer_labels": {
+    "core": "Core Single-Agent",
+    "smart": "Intelligence & Safety",
+    "gateway": "Multi-Platform",
+    "advanced": "Advanced Capabilities"
+  }
+}

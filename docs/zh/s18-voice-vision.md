@@ -4,6 +4,8 @@
 
 > *主模型负责思考和对话，辅助模型负责"看"和"听"。两者用不同的模型，走不同的提供商，互不影响。*
 
+![主模型 + 辅助模型双管线](../../illustrations/s18-voice-vision/01-framework-dual-model.png)
+
 ## 这一章要解决什么问题
 
 到 s17，agent 能通过 accessibility tree "看"网页。但如果用户在微信里发了一张图片问"这是什么"，或者发了一段语音消息——agent 什么都做不了。

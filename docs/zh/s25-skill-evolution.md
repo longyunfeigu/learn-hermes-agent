@@ -4,6 +4,8 @@
 
 > *s23 通过训练让模型本身变强。s25-s27 不改模型——只改模型收到的文本。技能指令、工具描述、系统提示词、甚至工具代码，全是文本，全可以被系统性地优化。*
 
+![自进化公式](../../illustrations/s25-skill-evolution/01-infographic-evolution-formula.png)
+
 ## 这一章要解决什么问题
 
 先退一步看全局。

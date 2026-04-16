@@ -52,6 +52,8 @@
 
 ## 最小心智模型
 
+![上下文压缩三层递进](../../illustrations/s05-context-compression/01-infographic-three-layers.png)
+
 这一章建议你先记三层，不要一上来记完整算法：
 
 ```text
@@ -91,6 +93,8 @@ messages（100 条，150K tokens）
 ```
 
 这三层是递进的：第 1 层最便宜（不花钱），第 2 层是边界计算，第 3 层才真正调 LLM。
+
+![压缩前 vs 压缩后对比](../../illustrations/s05-context-compression/02-comparison-before-after.png)
 
 ## 压缩后，真正要保住什么
 

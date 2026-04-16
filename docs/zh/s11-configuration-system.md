@@ -22,6 +22,8 @@
 
 **把"agent 怎么运行"从代码里抽出来，变成可声明、可合并、可隔离的外部配置。**
 
+![配置来源与优先级链](../../illustrations/s11-configuration-system/01-framework-config-sources.png)
+
 ## 先解释几个名词
 
 ### 什么是 HERMES_HOME

@@ -59,6 +59,8 @@ Hermes Agent 有两个入口：交互式终端（CLI）和多平台网关（Gate
 
 ## Hermes Agent 的五层架构
 
+![Hermes Agent 五层架构](../../illustrations/s00-architecture/01-framework-five-layers.png)
+
 这是 Hermes Agent 和大多数 agent 教学项目最不一样的地方：它不是"一个循环 + 一堆工具"，而是有明确的五层结构。
 
 ```text
@@ -110,6 +112,8 @@ Hermes Agent 有两个入口：交互式终端（CLI）和多平台网关（Gate
 **持久化层**：对话历史存在 SQLite 里（不是文件），支持并发读写和全文搜索。记忆存在 MEMORY.md / USER.md 里。技能存在 skills 目录里。这些状态跨进程重启存活。
 
 ## 一条消息是怎么流动的
+
+![一条消息的完整流动路径](../../illustrations/s00-architecture/02-flowchart-message-flow.png)
 
 以 CLI 场景为例（最简单的路径）：
 

@@ -4,6 +4,8 @@
 
 > *内置工具写在代码里，MCP 工具来自外部进程。但对 agent 来说，两种工具用起来一模一样。*
 
+![MCP 客户端-服务端协议](../../illustrations/s16-mcp/01-framework-mcp-protocol.png)
+
 ## 这一章要解决什么问题
 
 s02 讲的工具系统有一个前提：**工具是硬编码在代码里的。** 要加一个 GitHub 工具，就要写一个 `github_tool.py`，里面调 GitHub API，然后 `registry.register()`。

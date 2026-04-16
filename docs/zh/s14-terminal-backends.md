@@ -4,6 +4,8 @@
 
 > *工具调 terminal 执行命令。但命令在哪里跑——本地、Docker、还是 SSH 远程机器——工具不需要知道。*
 
+![终端后端抽象](../../illustrations/s14-terminal-backends/01-framework-backend-abstraction.png)
+
 ## 这一章要解决什么问题
 
 s01-s11 里 terminal 工具的实现是四行代码：

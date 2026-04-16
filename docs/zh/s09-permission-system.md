@@ -22,6 +22,8 @@
 
 但 Hermes Agent 的权限系统和大多数 agent 框架不一样。它没有通用的 `deny / allow / ask` 三步管道。它专门针对**终端命令**做模式匹配 — 因为在所有工具里，终端是最危险的那个。
 
+![危险命令检测与审批流程](../../illustrations/s09-permission-system/01-flowchart-permission-check.png)
+
 ## 先解释几个名词
 
 ### 什么是危险命令检测

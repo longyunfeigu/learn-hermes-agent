@@ -4,6 +4,8 @@
 
 > *内置记忆用文件存，但有人想用 Honcho 做用户建模，有人想用 mem0 做语义搜索。插件系统让他们各用各的，不改一行核心代码。*
 
+![插件架构与可插拔接口](../../illustrations/s24-plugin-architecture/01-framework-plugin-interface.png)
+
 ## 这一章要解决什么问题
 
 s07 讲的内置记忆系统用 MEMORY.md 和 USER.md 文件存储。够用，但有局限：

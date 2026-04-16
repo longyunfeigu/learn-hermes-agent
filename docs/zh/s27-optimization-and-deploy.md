@@ -4,6 +4,8 @@
 
 > *s26 教了怎么量化"好不好"。这一章把量化能力组装成一个自动优化循环：收集 feedback、变异、评估、选择、部署。完整管线，从输入一个 skill 名字到输出一个更好的版本。*
 
+![优化闭环](../../illustrations/s27-optimization-deploy/01-flowchart-optimization-loop.png)
+
 ## 这一章要解决什么问题
 
 s26 给了你三个工具：SyntheticDatasetBuilder（生成测试数据）、evaluate_skill（打分）、ConstraintValidator（门控）。

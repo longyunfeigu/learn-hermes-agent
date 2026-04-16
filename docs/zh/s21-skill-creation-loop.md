@@ -4,6 +4,8 @@
 
 > *agent 不只是执行任务，还能从经验中提取模式，把"一次性的解法"沉淀成"下次可复用的技能"。这是 Hermes Agent 区别于其他 agent 框架最核心的机制。*
 
+![技能创作闭环](../../illustrations/s21-skill-creation/01-flowchart-creation-loop.png)
+
 ## 这一章要解决什么问题
 
 s08 讲了技能系统的基础——agent 可以读取和使用技能文件。但那些技能是人预先写好的。

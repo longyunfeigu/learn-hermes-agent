@@ -29,6 +29,8 @@ agent 为了完成这件事，可能要：
 
 **把局部任务放进独立上下文里做，做完只把必要结果带回来。父 agent 的上下文保持干净。**
 
+![父子 Agent 委派关系](../../illustrations/s10-subagent-delegation/01-framework-parent-child.png)
+
 ## 先解释几个名词
 
 ### 什么是父 agent

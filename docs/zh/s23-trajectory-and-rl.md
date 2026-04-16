@@ -4,6 +4,8 @@
 
 > *s20-s22 让 agent 在运行时学习——更新记忆、创建技能、挂 hook。这一章让 agent 在离线时进化——把对话轨迹变成训练数据，用强化学习训练下一代模型。*
 
+![对话轨迹与 RL 训练流水线](../../illustrations/s23-trajectory-rl/01-flowchart-rl-pipeline.png)
+
 ## 这一章要解决什么问题
 
 s20 的后台审视和 s21 的技能创作是**运行时学习**——agent 在当前对话里发现的知识，通过文件（MEMORY.md、skills/）传递给未来的自己。

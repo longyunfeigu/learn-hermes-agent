@@ -4,6 +4,8 @@
 
 > *CLI 是你和 agent 一对一聊天。Gateway 是让同一个 agent 同时接待十几个平台上的用户。核心循环一行没变，变的只是消息从哪来、回复往哪送。*
 
+![多平台消息路由网关](../../illustrations/s12-gateway/01-framework-routing.png)
+
 ## 这一章要解决什么问题
 
 到 `s11`，你已经有了一个功能完整的单 agent 系统。但它只有一个入口：CLI——你在终端里输入一句话，agent 回复一句话。

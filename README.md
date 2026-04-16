@@ -1,245 +1,250 @@
-[English](./README.md) | [中文](./README-zh.md)
+[English](./README-en.md) | [中文](./README.md)
 
 # Learn Hermes Agent
 
-A teaching repository for implementers who want to understand and rebuild a production-grade autonomous AI agent from scratch.
+一个面向实现者的教学仓库：从零开始，手搓一个生产级自主 AI Agent。
 
-This repo does not try to mirror every product detail from the Hermes Agent codebase. It focuses on the mechanisms that actually decide whether an agent can work autonomously across platforms:
+这里教的不是"如何逐行模仿 Hermes Agent 的源码"，而是"如何抓住真正决定 agent 能力的核心机制"，用清晰、渐进、可自己实现的方式，把一个类似 Hermes Agent 的系统从 0 做到能用、好用、可跨平台运行。
 
-- the conversation loop
-- tool registry and dispatch
-- session persistence
-- prompt assembly
-- context compression
-- memory and skill management
-- skill system
-- permission and safety
-- multi-platform gateway
-- terminal backends
-- scheduling
-- external capability routing
+## 这个仓库到底在教什么
 
-The goal is simple:
+先把一句话说清楚：
 
-**understand the real design backbone well enough that you can rebuild it yourself.**
+**模型负责思考。代码负责给模型提供一个跨平台、可持久、可管理技能的工作环境。**
 
-## What This Repo Is Really Teaching
+这个"工作环境"就是 `harness`。
+对 Hermes Agent 来说，harness 主要由这些部分组成：
 
-One sentence first:
+- `Agent Loop`：不停地"向模型提问 -> 执行工具 -> 把结果喂回去"的同步对话循环。
+- `Tool System`：自注册的工具系统 — agent 的双手。
+- `Session Store`：SQLite + FTS5 全文搜索 — 让对话跨重启存活。
+- `Prompt Builder`：从人设、记忆、配置和上下文组装系统提示词。
+- `Context Compression`：对话变长时，自动用 LLM 做摘要压缩。
+- `Memory & Skills`：持久化知识和 agent 管理的技能文件。
+- `Permission System`：危险命令执行前的检测与审批。
+- `Gateway`：同一套 agent 循环，接入 Telegram、Discord、Slack、微信等 15+ 平台。
+- `Terminal Backends`：本地、Docker、SSH、Modal、Daytona — 不管在哪执行命令。
+- `Cron / MCP / Voice`：让单 agent 升级成完整的工作平台。
 
-**The model does the reasoning. The harness gives the model a working environment that spans platforms, persists across sessions, and manages its own skills.**
+本仓库的目标，是让你真正理解这些机制为什么存在、最小版本怎么实现、什么时候该升级到更完整的版本。
 
-That working environment is made of a few cooperating parts:
+## 这个仓库不教什么
 
-- `Agent Loop`: send messages to the model, execute tool calls, append results, continue
-- `Tool System`: a self-registering dispatch layer — the agent's hands
-- `Session Store`: SQLite with FTS5 — conversation memory that survives restarts
-- `Prompt Builder`: assemble system prompts from personality, memory, config, and context
-- `Context Compression`: keep the active window small when conversations grow long
-- `Memory & Skills`: durable knowledge and agent-managed skill files
-- `Permission System`: detect dangerous commands before execution
-- `Gateway`: a single agent loop that listens on Telegram, Discord, Slack, WeChat, and more
-- `Terminal Backends`: run commands locally, in Docker, over SSH, or on serverless platforms
-- `Cron / MCP / Voice`: grow the single-agent core into a full working platform
+本仓库**不追求**把 Hermes Agent 生产仓库的所有实现细节逐条抄下来。
 
-This is the teaching promise of the repo:
+下面这些内容，如果和 agent 的核心运行机制关系不大，就不会占据主线篇幅：
 
-- teach the mainline in a clean order
-- explain unfamiliar concepts before relying on them
-- stay close to real system structure
-- avoid drowning the learner in irrelevant product details
+- 打包、Nix flake、发布流程
+- 落地页和营销素材
+- 企业订阅和计费接线
+- 遥测和数据分析
+- RL 训练管道和批量轨迹生成的内部细节
+- 平台特定的 API 细节（微信 XML 解析、Telegram 内联键盘等）
+- 皮肤/主题引擎
+- 历史版本迁移逻辑
 
-## What This Repo Deliberately Does Not Teach
+这不是偷懒，而是教学取舍。
 
-This repo is not trying to preserve every detail that exists in the production system.
+一个好的教学仓库，应该优先保证三件事：
 
-If a detail is not central to the agent's core operating model, it should not dominate the teaching line. That includes things like:
+1. 读者能从 0 到 1 自己做出来。
+2. 读者不会被大量无关细节打断心智。
+3. 真正关键的机制、数据结构和模块协作关系讲得完整、准确、没有幻觉。
 
-- packaging, Nix flakes, and release mechanics
-- landing pages and marketing assets
-- enterprise subscription and billing wiring
-- telemetry and analytics
-- RL training pipeline and batch runner internals
-- platform-specific API quirks (WeChat XML parsing, Telegram inline keyboards)
-- skin/theme engine cosmetics
-- historical migration logic
+## 面向的读者
 
-Those details may matter in production. They do not belong at the center of a 0-to-1 teaching path.
+这个仓库默认读者是：
 
-## Who This Is For
+- 会一点 Python
+- 知道函数、类、async/await 这些基础概念
+- 但不一定系统做过 agent、多平台机器人或复杂工程架构
 
-The assumed reader:
+所以这里会坚持几个写法原则：
 
-- knows basic Python
-- understands functions, classes, async/await basics
-- may be completely new to agent systems or multi-platform bots
+- 新概念先解释再使用。
+- 同一个概念尽量只在一个地方完整讲清。
+- 先讲"它是什么"，再讲"为什么需要"，最后讲"如何实现"。
+- 不把初学者扔进一堆互相引用的碎片文档里自己拼图。
 
-So the repo tries to keep a few strong teaching rules:
+## 学习承诺
 
-- explain a concept before using it
-- keep one concept fully explained in one main place
-- start from "what it is", then "why it exists", then "how to implement it"
-- avoid forcing beginners to assemble the system from scattered fragments
+学完这套内容，你应该能做到两件事：
 
-## Recommended Reading Order
+1. 自己从零写出一个结构清楚、可运行、可跨平台部署的自主 AI Agent。
+2. 看懂更复杂系统时，知道哪些是主干机制，哪些只是产品化外围细节。
 
-- Overview: [`docs/en/s00-architecture-overview.md`](./docs/en/s00-architecture-overview.md)
-- Code Reading Order: [`docs/en/s00f-code-reading-order.md`](./docs/en/s00f-code-reading-order.md)
-- Glossary: [`docs/en/glossary.md`](./docs/en/glossary.md)
-- Teaching Scope: [`docs/en/teaching-scope.md`](./docs/en/teaching-scope.md)
-- Data Structures: [`docs/en/data-structures.md`](./docs/en/data-structures.md)
+我们追求的是：
 
-## If This Is Your First Visit, Start Here
+- 对关键机制和关键数据结构的高保真理解
+- 对实现路径的高可操作性
+- 对教学路径的高可读性
 
-Do not open random chapters first.
+而不是把"原始源码里存在过的所有复杂细节"一股脑堆给你。
 
-The safest path is:
+## 建议阅读顺序
 
-1. Read [`docs/en/s00-architecture-overview.md`](./docs/en/s00-architecture-overview.md) for the full system map.
-2. Read [`docs/en/s00d-chapter-order-rationale.md`](./docs/en/s00d-chapter-order-rationale.md) so the chapter order makes sense before you dive into mechanism detail.
-3. Read [`docs/en/s00f-code-reading-order.md`](./docs/en/s00f-code-reading-order.md) so you know which source files to open first.
-4. Follow the four stages in order: `s01-s06 -> s07-s11 -> s12-s15 -> s16-s20`.
-5. After each stage, stop and rebuild the smallest version yourself before continuing.
+先读总览，再按顺序向后读。
 
-If the middle and late chapters start to blur together, reset in this order:
+- 总览：[`docs/zh/s00-architecture-overview.md`](./docs/zh/s00-architecture-overview.md)
+- 代码阅读顺序：[`docs/zh/s00f-code-reading-order.md`](./docs/zh/s00f-code-reading-order.md)
+- 术语表：[`docs/zh/glossary.md`](./docs/zh/glossary.md)
+- 教学范围：[`docs/zh/teaching-scope.md`](./docs/zh/teaching-scope.md)
+- 数据结构总表：[`docs/zh/data-structures.md`](./docs/zh/data-structures.md)
 
-1. [`docs/en/data-structures.md`](./docs/en/data-structures.md)
-2. [`docs/en/entity-map.md`](./docs/en/entity-map.md)
-3. the bridge docs closest to the chapter you are stuck on
-4. then return to the chapter body
+## 第一次打开仓库，最推荐这样走
 
-## Bridge Docs
+如果你是第一次进这个仓库，不要随机点章节。
 
-These are not extra main chapters. They are bridge documents that make the middle and late system easier to understand:
+最稳的入口顺序是：
 
-- Chapter order rationale: [`docs/en/s00d-chapter-order-rationale.md`](./docs/en/s00d-chapter-order-rationale.md)
-- Code reading order: [`docs/en/s00f-code-reading-order.md`](./docs/en/s00f-code-reading-order.md)
-- Reference module map: [`docs/en/s00e-reference-module-map.md`](./docs/en/s00e-reference-module-map.md)
-- One request lifecycle: [`docs/en/s00b-one-request-lifecycle.md`](./docs/en/s00b-one-request-lifecycle.md)
-- Tool dispatch pipeline: [`docs/en/s02a-tool-dispatch-pipeline.md`](./docs/en/s02a-tool-dispatch-pipeline.md)
-- Message and prompt pipeline: [`docs/en/s04a-message-prompt-pipeline.md`](./docs/en/s04a-message-prompt-pipeline.md)
-- Gateway message flow: [`docs/en/s12a-gateway-message-flow.md`](./docs/en/s12a-gateway-message-flow.md)
-- Platform adapter pattern: [`docs/en/s13a-platform-adapter-pattern.md`](./docs/en/s13a-platform-adapter-pattern.md)
-- Entity map: [`docs/en/entity-map.md`](./docs/en/entity-map.md)
+1. 先看 [`docs/zh/s00-architecture-overview.md`](./docs/zh/s00-architecture-overview.md)，确认系统全景。
+2. 再看 [`docs/zh/s00d-chapter-order-rationale.md`](./docs/zh/s00d-chapter-order-rationale.md)，确认为什么主线必须按这个顺序长出来。
+3. 再看 [`docs/zh/s00f-code-reading-order.md`](./docs/zh/s00f-code-reading-order.md)，确认本地 `agents/*.py` 该按什么顺序打开。
+4. 然后按四阶段读主线：`s01-s06 -> s07-s11 -> s12-s15 -> s16-s20`。
+5. 每学完一个阶段，停下来自己手写一个最小版本，不要等全部看完再回头补实现。
 
-## Five Stages
+如果你读到一半开始打结，最稳的重启顺序是：
 
-1. `s01-s06`: build a working single-agent core with persistence
-2. `s07-s11`: add intelligence — memory, skills, safety, delegation, and error recovery
-3. `s12-s15`: go multi-platform — gateway, adapters, terminal backends, and scheduling
-4. `s16-s20`: add advanced capabilities — MCP, browser, voice, vision, and full integration
-5. `s21-s25`: self-improvement — skill creation, hooks, trajectory/RL, plugins, and skill evolution
+1. [`docs/zh/data-structures.md`](./docs/zh/data-structures.md)
+2. [`docs/zh/entity-map.md`](./docs/zh/entity-map.md)
+3. 当前卡住章节对应的桥接文档
+4. 再回当前章节正文
 
-## Main Chapters
+## 桥接阅读
 
-| Chapter | Topic | What you get |
+下面这些文档不是新的主线章节，而是帮助你把中后半程真正讲透的"桥接层"：
+
+- 为什么是这个章节顺序：[`docs/zh/s00d-chapter-order-rationale.md`](./docs/zh/s00d-chapter-order-rationale.md)
+- 本仓库代码阅读顺序：[`docs/zh/s00f-code-reading-order.md`](./docs/zh/s00f-code-reading-order.md)
+- 参考仓库模块映射图：[`docs/zh/s00e-reference-module-map.md`](./docs/zh/s00e-reference-module-map.md)
+- 一次请求的完整生命周期：[`docs/zh/s00b-one-request-lifecycle.md`](./docs/zh/s00b-one-request-lifecycle.md)
+- 工具分发管道：[`docs/zh/s02a-tool-dispatch-pipeline.md`](./docs/zh/s02a-tool-dispatch-pipeline.md)
+- 消息与提示词管道：[`docs/zh/s04a-message-prompt-pipeline.md`](./docs/zh/s04a-message-prompt-pipeline.md)
+- Gateway 消息流：[`docs/zh/s12a-gateway-message-flow.md`](./docs/zh/s12a-gateway-message-flow.md)
+- 平台适配器模式：[`docs/zh/s13a-platform-adapter-pattern.md`](./docs/zh/s13a-platform-adapter-pattern.md)
+- 系统实体边界图：[`docs/zh/entity-map.md`](./docs/zh/entity-map.md)
+
+## 四阶段主线
+
+| 阶段 | 目标 | 章节 |
 |---|---|---|
-| `s00` | Architecture Overview | the global map, key terms, and learning order |
-| `s01` | Agent Loop | the synchronous conversation loop — ask, tool-call, append, continue |
-| `s02` | Tool System | a self-registering tool registry with dispatch orchestration |
-| `s03` | Session Store | SQLite + FTS5 persistence — conversations that survive restarts |
-| `s04` | Prompt Builder | section-based system prompt assembly from personality, memory, and config |
-| `s05` | Context Compression | auto-triggered LLM summarization when context grows too long |
-| `s06` | Error Recovery | API error classification, retry with backoff, and provider failover |
-| `s07` | Memory System | cross-session persistent knowledge with MEMORY.md and USER.md |
-| `s08` | Skill System | agent-managed skills — create, edit, and execute |
-| `s09` | Permission System | dangerous command detection and approval gates |
-| `s10` | Subagent Delegation | spawn fresh context for isolated subtasks |
-| `s11` | Configuration System | YAML config, env vars, profiles, and runtime migration |
-| `s12` | Gateway Architecture | the multi-platform message dispatch loop |
-| `s13` | Platform Adapters | building integrations for Telegram, Discord, Slack, WeChat, and more |
-| `s14` | Terminal Backends | run commands in Docker, over SSH, on Modal, or Daytona |
-| `s15` | Cron Scheduler | time-based automation with duration strings and cron expressions |
-| `s16` | MCP Integration | external capability routing via Model Context Protocol |
-| `s17` | Browser Automation | Playwright + Browserbase for web interaction |
-| `s18` | Voice & Vision | TTS/STT pipelines and image analysis |
-| `s19` | CLI Interface | prompt_toolkit + Rich for an interactive terminal experience |
-| `s20` | Full System | everything wired together — the complete Hermes Agent |
-| `s21` | Skill Creation Loop | background review extracts patterns into reusable skills |
-| `s22` | Hook System | lifecycle hooks for extensibility without modifying core code |
-| `s23` | Trajectory & RL | conversation trajectories become training data for model improvement |
-| `s24` | Plugin Architecture | pluggable memory, compression, and capability providers |
-| `s25` | Self-Evolution Overview | the core insight, four evolution targets, and full pipeline overview |
-| `s26` | Evaluation System | eval datasets, LLM-as-judge fitness scoring, and constraint gates |
-| `s27` | Optimization & Deploy | the feedback→mutate→select loop, full pipeline, and Phase 2-4 concepts |
+| 阶段 1 | 先做出一个能工作、能持久化的单 agent | `s01-s06` |
+| 阶段 2 | 再补智能层 — 记忆、技能、安全、委派、容错 | `s07-s11` |
+| 阶段 3 | 跨平台 — Gateway、适配器、终端后端、定时任务 | `s12-s15` |
+| 阶段 4 | 高级能力 — MCP、浏览器、语音、视觉、完整集成 | `s16-s20` |
+| 阶段 5 | 自我进化 — 技能创作、Hook、轨迹/RL、插件、技能自进化 | `s21-s25` |
 
-## Chapter Index: What to Focus on in Each Chapter
+## 全部章节
 
-If this is your first time learning this material systematically, do not spread your attention evenly across all details. For each chapter, focus on 3 things:
-
-1. What new capability this chapter adds.
-2. Where the key state lives.
-3. After finishing, can you hand-write this minimal mechanism yourself?
-
-| Chapter | Key Data Structures / Entities | What you should have after this chapter |
+| 章节 | 主题 | 你会得到什么 |
 |---|---|---|
-| `s01` | `messages` list / `AIAgent` class / `run_conversation()` | a minimal working synchronous conversation loop |
-| `s02` | `ToolRegistry` / `ToolEntry` / `tool_result` | a self-registering, self-discovering tool system |
-| `s03` | `SessionDB` / `state.db` / FTS5 index | a SQLite persistence layer — conversations survive restarts |
-| `s04` | `build_context_files_prompt()` / `build_skills_system_prompt()` | a pipeline assembling prompts from personality, memory, and config |
-| `s05` | `ContextCompressor` / compression trigger threshold | an auto-summarization layer when context grows too long |
-| `s06` | `ClassifiedError` / `FailoverReason` / `classify_api_error()` | error classification + backoff retry + provider failover |
-| `s07` | `MemoryStore` / `MemoryManager` / `MEMORY.md` / `USER.md` | a layer that separates "temporary context" from "cross-session memory" |
-| `s08` | `SkillMeta` / `SkillBundle` / skill SKILL.md files | a skill system that can create, edit, and execute |
-| `s09` | `DANGEROUS_PATTERNS` / `detect_dangerous_command()` / `_ApprovalEntry` | a "dangerous operations must pass the gate" approval pipeline |
-| `s10` | `delegate_tool` / child `messages` / isolated `AIAgent` | a subagent mechanism with isolated context for one-off delegation |
-| `s11` | config dict / `Profile` management / migration functions | YAML config + profiles + runtime migration |
-| `s12` | `GatewayRunner` / `MessageEvent` / platform routing | a unified multi-platform message dispatch loop |
-| `s13` | `BasePlatformAdapter` / `MessageType` / `SendResult` | a reusable platform adapter pattern |
-| `s14` | `BaseEnvironment` / local / docker / ssh / modal / daytona | abstract execution environments: local, Docker, SSH, cloud |
-| `s15` | `parse_schedule()` / `create_job()` / `get_due_jobs()` / job dicts | a "when the time comes, work starts" scheduling layer |
-| `s16` | `mcp_tool` / MCP config / tool schema bridging | a bus for plugging external tools and capabilities into the system |
-| `s17` | `browser_tool` / Playwright / Browserbase provider | a browser automation layer for web interaction |
-| `s18` | `tts_tool` / `voice_mode` / `vision_tools` | multimodal pipelines: voice I/O + image analysis |
-| `s19` | `HermesCLI` / `CommandDef` / `KawaiiSpinner` / Rich rendering | a fully-featured interactive terminal interface |
-| `s20` | all of the above | everything assembled into a complete system |
-| `s21` | `BackgroundReviewer` / `_SKILL_REVIEW_PROMPT` / trigger logic | a "discover patterns → create skill" background review loop |
-| `s22` | `HookRegistry` / `PluginHookRegistry` / BOOT.md handler | lifecycle hooks — inject custom logic without modifying core code |
-| `s23` | `convert_to_trajectory()` / `compress_trajectory()` / reward functions | conversation data → training pipeline for model improvement |
-| `s24` | plugin interfaces / memory providers / compression providers | pluggable memory and compression without touching core code |
-| `s25` | `EvalExample` / `EvalDataset` | the foundational data structures for self-evolution |
-| `s26` | `SyntheticDatasetBuilder` / `FitnessScore` / `ConstraintValidator` | measurement infrastructure — generate data, score outputs, gate changes |
-| `s27` | `SkillOptimizer` / `EvolutionResult` / `evolve_skill()` | the optimization loop and full 7-step pipeline |
+| `s00` | 架构总览 | 全局地图、名词、学习顺序 |
+| `s01` | Agent Loop | 同步对话循环 — 提问、工具调用、追加结果、继续 |
+| `s02` | Tool System | 自注册的工具注册表与分发调度 |
+| `s03` | Session Store | SQLite + FTS5 持久化 — 对话跨重启存活 |
+| `s04` | Prompt Builder | 基于分区的系统提示词组装：人设、记忆、配置 |
+| `s05` | Context Compression | 对话过长时自动触发 LLM 摘要压缩 |
+| `s06` | Error Recovery | API 错误分类、退避重试与服务商故障转移 |
+| `s07` | Memory System | 跨会话持久知识：MEMORY.md 与 USER.md |
+| `s08` | Skill System | agent 管理的技能 — 创建、编辑、执行 |
+| `s09` | Permission System | 危险命令检测与审批关卡 |
+| `s10` | Subagent Delegation | 为隔离子任务创建独立上下文 |
+| `s11` | Configuration System | YAML 配置、环境变量、Profile 与运行时迁移 |
+| `s12` | Gateway Architecture | 多平台消息分发循环 |
+| `s13` | Platform Adapters | 接入 Telegram、Discord、Slack、微信等平台 |
+| `s14` | Terminal Backends | 在 Docker、SSH、Modal、Daytona 中执行命令 |
+| `s15` | Cron Scheduler | 支持时长字符串和 cron 表达式的定时自动化 |
+| `s16` | MCP Integration | 通过 Model Context Protocol 接入外部能力 |
+| `s17` | Browser Automation | Playwright + Browserbase 网页交互 |
+| `s18` | Voice & Vision | TTS/STT 管道与图像分析 |
+| `s19` | CLI Interface | prompt_toolkit + Rich 交互式终端 |
+| `s20` | Full System | 所有机制组装在一起 — 完整的 Hermes Agent |
+| `s21` | Skill Creation Loop | 后台审视提取模式，自动创建可复用技能 |
+| `s22` | Hook System | 生命周期钩子，不改核心代码扩展行为 |
+| `s23` | Trajectory & RL | 对话轨迹变训练数据，强化学习改进模型 |
+| `s24` | Plugin Architecture | 可插拔的记忆、压缩、能力提供者 |
+| `s25` | Self-Evolution Overview | 核心洞察、四层进化目标、完整管线总览 |
+| `s26` | Evaluation System | 评估数据集、LLM-as-judge 打分、约束门控 |
+| `s27` | Optimization & Deploy | 收集反馈→改写→择优循环、完整管线、Phase 2-4 概念 |
 
-## Reading Approaches for Beginners
+## 章节总索引：每章最该盯住什么
 
-### Approach 1: Steady Mainline
+如果你是第一次系统学这套内容，不要把注意力平均分给所有细节。
+每章都先盯住 3 件事：
 
-Best for readers encountering agent systems for the first time.
+1. 这一章新增了什么能力。
+2. 这一章的关键状态放在哪里。
+3. 学完以后，你自己能不能把这个最小机制手写出来。
 
-Read in this order:
+| 章节 | 最该盯住的数据结构 / 实体 | 这一章结束后你手里应该多出什么 |
+|---|---|---|
+| `s01` | `messages` 列表 / `AIAgent` 类 / `run_conversation()` | 一个最小可运行的同步对话循环 |
+| `s02` | `ToolRegistry` / `ToolEntry` / `tool_result` | 一个能自注册、自发现的工具系统 |
+| `s03` | `SessionDB` / `state.db` / FTS5 索引 | 一个 SQLite 持久化层，对话重启不丢 |
+| `s04` | `build_context_files_prompt()` / `build_skills_system_prompt()` | 一条从人设、记忆、配置组装提示词的管道 |
+| `s05` | `ContextCompressor` / 压缩触发阈值 | 一个上下文膨胀时自动摘要的压缩层 |
+| `s06` | `ClassifiedError` / `FailoverReason` / `classify_api_error()` | 一套错误分类 + 退避重试 + 故障转移 |
+| `s07` | `MemoryStore` / `MemoryManager` / `MEMORY.md` / `USER.md` | 一套区分"临时上下文"和"跨会话记忆"的持久层 |
+| `s08` | `SkillMeta` / `SkillBundle` / SKILL.md 技能文件 | 一个能创建、编辑、执行的技能系统 |
+| `s09` | `DANGEROUS_PATTERNS` / `detect_dangerous_command()` / `_ApprovalEntry` | 一条"危险操作先过闸"的审批管道 |
+| `s10` | `delegate_tool` / 子 `messages` / 隔离的 `AIAgent` 实例 | 一个能隔离上下文、做一次性委派的子 agent 机制 |
+| `s11` | config 字典 / Profile 管理 / 迁移函数 | 一套 YAML 配置 + Profile + 运行时迁移 |
+| `s12` | `GatewayRunner` / `MessageEvent` / 平台路由 | 一个统一的多平台消息分发循环 |
+| `s13` | `BasePlatformAdapter` / `MessageType` / `SendResult` | 一个可复用的平台适配器模式 |
+| `s14` | `BaseEnvironment` / local / docker / ssh / modal / daytona | 一套抽象执行环境：本地、Docker、SSH、云端 |
+| `s15` | `parse_schedule()` / `create_job()` / `get_due_jobs()` / job 字典 | 一套"时间到了就能自动开工"的定时触发层 |
+| `s16` | `mcp_tool` / MCP 配置 / 工具 schema 桥接 | 一套把外部工具与外部能力接入主系统的总线 |
+| `s17` | `browser_tool` / Playwright / Browserbase provider | 一个能自动操作网页的浏览器自动化层 |
+| `s18` | `tts_tool` / `voice_mode` / `vision_tools` | 语音输入输出 + 图像分析的多模态管道 |
+| `s19` | `HermesCLI` / `CommandDef` / `KawaiiSpinner` / Rich 渲染 | 一个功能完整的交互式终端界面 |
+| `s20` | 全部以上 | 所有机制组装成一个完整系统 |
+| `s21` | `BackgroundReviewer` / `_SKILL_REVIEW_PROMPT` / 触发逻辑 | 一套"发现模式→创建技能"的后台审视循环 |
+| `s22` | `HookRegistry` / `PluginHookRegistry` / BOOT.md 处理 | 生命周期钩子——不改核心代码就能注入自定义逻辑 |
+| `s23` | `convert_to_trajectory()` / `compress_trajectory()` / 奖励函数 | 对话数据→训练管线，用 RL 改进模型 |
+| `s24` | 插件接口 / 记忆提供者 / 压缩提供者 | 可插拔的记忆和压缩，不碰核心代码 |
+| `s25` | `EvalExample` / `EvalDataset` | 自进化的基础数据结构 |
+| `s26` | `SyntheticDatasetBuilder` / `FitnessScore` / `ConstraintValidator` | 度量基础设施——生成数据、打分、约束门控 |
+| `s27` | `SkillOptimizer` / `EvolutionResult` / `evolve_skill()` | 优化循环 + 完整 7 步管线 |
+
+## 如果你是初学者，最推荐这样读
+
+### 读法 1：最稳主线
+
+适合第一次系统接触 agent 的读者。
+
+按这个顺序读：
 
 `s00 -> s01 -> s02 -> s03 -> s04 -> s05 -> s06 -> s07 -> s08 -> s09 -> s10 -> s11 -> s12 -> s13 -> s14 -> s15 -> s16 -> s17 -> s18 -> s19 -> s20`
 
-### Approach 2: Build First, Complete Later
+### 读法 2：先做出能跑的，再补完整
 
-Best for "get it running, then fill in the gaps" readers.
+适合"想先把系统搭出来，再慢慢补完"的读者。
 
-Read in this order:
+按这个顺序读：
 
-1. `s01-s06`: build a core agent with persistence and context compression
-2. `s07-s11`: add memory, skills, safety, delegation, and config
-3. `s12-s15`: go multi-platform, learn cross-environment execution
-4. `s16-s20`: add advanced capabilities, assemble the complete system
+1. `s01-s06`：先做出一个能持久化、能压缩上下文的核心 agent
+2. `s07-s11`：补上记忆、技能、安全、委派和配置
+3. `s12-s15`：接入多平台，学会跨环境执行
+4. `s16-s20`：补高级能力，组装完整系统
 
-### Approach 3: When You Get Stuck
+### 读法 3：卡住时这样回看
 
-If you hit a wall in the middle or late chapters, do not push forward blindly.
+如果你在中后半程开始打结，先不要硬往下冲。
 
-Reset in this order:
+回看顺序建议是：
 
-1. [`docs/en/s00-architecture-overview.md`](./docs/en/s00-architecture-overview.md)
-2. [`docs/en/data-structures.md`](./docs/en/data-structures.md)
-3. [`docs/en/entity-map.md`](./docs/en/entity-map.md)
-4. the chapter you are stuck on
+1. [`docs/zh/s00-architecture-overview.md`](./docs/zh/s00-architecture-overview.md)
+2. [`docs/zh/data-structures.md`](./docs/zh/data-structures.md)
+3. [`docs/zh/entity-map.md`](./docs/zh/entity-map.md)
+4. 当前卡住的那一章
 
-When readers truly get stuck, it is usually not "I can't read the code" but rather:
+因为读者真正卡住时，往往不是"代码没看懂"，而是：
 
-- which layer does this mechanism plug into?
-- which data structure holds this state?
-- what is the difference between this term and another that looks similar?
+- 这个机制到底接在系统哪一层
+- 这个状态到底存在哪个结构里
+- 这个名词和另一个看起来很像的名词到底差在哪
 
-## Quick Start
+## 快速开始
 
 ```sh
 git clone <repo-url>
@@ -248,108 +253,115 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-Then configure your API key in `.env`, and run:
+把 `.env` 里的 API Key 配置好以后：
 
 ```sh
 python agents/s01_agent_loop.py
-python agents/s12_gateway.py
-python agents/s20_full.py
 ```
 
-Suggested order:
+建议顺序：
 
-1. Run `s01` and make sure the minimal loop really works.
-2. Read `s00`, then move through `s01 -> s06` in order.
-3. Only after the single-agent core plus its persistence feel stable, continue into `s07 -> s11`.
-4. Move into gateway and platform chapters `s12 -> s15` only after the core agent makes sense.
-5. Read `s20_full.py` last, after the mechanisms already make sense separately.
+1. 先跑 `s01`，确认最小循环真的能工作。
+2. 一边读 `s00`，一边按顺序跑 `s01 -> s06`。
+3. 等单 agent 核心吃透后，再进入 `s07 -> s11`。
+4. Gateway 和平台章节 `s12 -> s15` 在核心 agent 理解清楚后再看。
+5. 按阶段继续推进 `s16 -> s20`，最后进入自进化章节 `s21 -> s27`。
 
-## How To Read Each Chapter
+## 如何读这套教程
 
-Each chapter is easier to absorb if you keep the same reading rhythm:
+每章都配有黑板粉笔风格（chalkboard）的概念插图，帮助你快速建立心智模型。
 
-1. what problem appears without this mechanism
-2. what the new concept means
-3. what the smallest correct implementation looks like
-4. where the state actually lives
-5. how it plugs back into the loop
-6. where to stop first, and what can wait until later
+每章都建议按这个顺序看：
 
-If you keep asking:
+1. `问题`：没有这个机制会出现什么痛点。
+2. `概念定义`：先把新名词讲清楚。
+3. `最小实现`：先做最小但正确的版本。
+4. `核心数据结构`：搞清楚状态到底存在哪里。
+5. `主循环如何接入`：它如何与 agent loop 协作。
+6. `这一章先停在哪里`：先守住什么边界，哪些扩展可以后放。
 
-- "Is this core mainline or just a side detail?"
-- "Where does this state actually live?"
+如果你是初学者，不要着急追求"一次看懂所有复杂机制"。
+先把每章的最小实现真的写出来，再理解升级版边界，会轻松很多。
 
-go back to:
+如果你在阅读中经常冒出这两类问题：
 
-- [`docs/en/teaching-scope.md`](./docs/en/teaching-scope.md)
-- [`docs/en/data-structures.md`](./docs/en/data-structures.md)
-- [`docs/en/entity-map.md`](./docs/en/entity-map.md)
+- "这一段到底算主线，还是维护者补充？"
+- "这个状态到底存在哪个结构里？"
 
-## Repository Structure
+建议随时回看：
+
+- [`docs/zh/teaching-scope.md`](./docs/zh/teaching-scope.md)
+- [`docs/zh/data-structures.md`](./docs/zh/data-structures.md)
+- [`docs/zh/entity-map.md`](./docs/zh/entity-map.md)
+
+## 本仓库的教学取舍
+
+为了保证"从 0 到 1 可实现"，本仓库会刻意做这些取舍：
+
+- 先教最小正确版本，再讲扩展边界。
+- 如果一个真实机制很复杂，但主干思想并不复杂，就先讲主干思想。
+- 如果一个高级名词出现了，就解释它是什么，不假设读者天然知道。
+- 如果一个真实系统里某些边角分支对教学价值不高，就直接删掉。
+
+这意味着本仓库追求的是：
+
+**核心机制高保真，外围细节有取舍。**
+
+## 与 Learn Claude Code 的关键差异
+
+Hermes Agent 和 Claude Code 共享同样的 agent 范式 — 循环、工具、规划、上下文 — 但 Hermes 有独特的架构选择值得理解：
+
+| 维度 | Claude Code | Hermes Agent |
+|---|---|---|
+| 语言 | TypeScript/Node.js | Python |
+| 循环风格 | 异步流式 | 同步 + 异步桥接 |
+| 持久化 | 文件系统 Memory | SQLite + FTS5 全文搜索 |
+| 多平台 | 仅 CLI | 15+ 平台适配器 via Gateway |
+| 终端 | 本地 Shell | 本地、Docker、SSH、Modal、Daytona |
+| 技能 | 静态技能文件 | Agent 管理的技能（创建 -> 使用 -> 编辑） |
+| API 格式 | Anthropic 原生 | OpenAI 兼容（支持 200+ 模型） |
+| 定时任务 | 会话内 cron | 持久化 cron + 时长字符串和 cron 表达式 |
+
+这些差异不是表面的 — 它们导致了根本不同的实现模式，教学章节会详细展开。
+
+## 项目结构
 
 ```text
 learn-hermes-agent/
-├── agents/              # runnable Python reference implementations per chapter
-├── docs/zh/             # Chinese mainline docs
-├── docs/en/             # English docs
-├── skills/              # skill files used in s08
-├── web/                 # web teaching platform (optional)
-└── requirements.txt
+├── agents/              # 每一章对应一个可运行的 Python 参考实现
+├── docs/zh/             # 中文主线文档
+├── docs/en/             # 英文文档
+├── illustrations/       # 每章配套的黑板风格插图（chalkboard style）
+├── tests/               # 冒烟测试
+├── web/                 # Web 教学平台（可选）
+├── .env.example         # 环境变量示例
+└── requirements.txt     # Python 依赖
 ```
 
-## Teaching Tradeoffs
+## 语言说明
 
-To ensure "buildable from 0 to 1", this repo makes deliberate tradeoffs:
+当前仓库以中文文档为主线，最完整、更新也最快。
 
-- Teach the minimal correct version first, then explain extension boundaries.
-- If a real mechanism is complex but the core idea is not, teach the core idea first.
-- If an advanced term appears, explain it — do not assume the reader already knows.
-- If an edge case in the real system has low teaching value, remove it entirely.
+- `zh`：主线版本，最完整
+- `en`：主要章节可用
 
-This means the repo aims for:
+如果你要系统学习，请优先看中文。
 
-**High fidelity on core mechanisms, deliberate tradeoffs on peripheral details.**
+## 最后的目标
 
-## Key Differences from Learn Claude Code
+读完这套内容，你不应该只是"知道 Hermes Agent 很厉害"。
 
-Hermes Agent and Claude Code share the same agent paradigm — loop, tools, planning, context — but Hermes has distinct architectural choices worth understanding:
+你应该能自己回答这些问题：
 
-| Aspect | Claude Code | Hermes Agent |
-|---|---|---|
-| Language | TypeScript/Node.js | Python |
-| Loop style | Async streaming | Synchronous with bridged async |
-| Persistence | File-based memory | SQLite + FTS5 full-text search |
-| Multi-platform | CLI only | 15+ platform adapters via gateway |
-| Terminal | Local shell | Local, Docker, SSH, Modal, Daytona |
-| Skills | Static skill files | Agent-managed skills (create → use → edit) |
-| API format | Anthropic-native | OpenAI-compatible (works with 200+ models) |
-| Scheduling | In-session cron | Persistent cron with duration strings and cron expressions |
+- 一个自主 agent 跨会话运行最少要持久化哪些状态？
+- 工具注册表为什么是 agent 能力的核心？
+- 同一套对话循环怎么扩展到 15+ 消息平台？
+- 记忆、技能、权限、上下文压缩、错误恢复分别解决什么问题？
+- 终端后端如何抽象掉执行环境的差异？
+- 一个系统什么时候该从单 agent 升级成 Gateway、定时任务、MCP 和语音？
 
-These differences are not cosmetic — they lead to fundamentally different implementation patterns that the teaching chapters explore in detail.
-
-## Language Status
-
-Chinese is the canonical teaching line and the fastest-moving version.
-
-- `zh`: most reviewed and most complete
-- `en`: main chapters plus the major bridge docs are available
-
-If you want the fullest and most frequently refined explanation path, use the Chinese docs first.
-
-## End Goal
-
-By the end of the repo, you should be able to answer these questions clearly:
-
-- what is the minimum state an autonomous agent needs to persist across sessions?
-- why is the tool registry the center of the agent's capability?
-- how does a single conversation loop scale to 15+ messaging platforms?
-- what problem do memory, skills, permissions, context compression, and error recovery each solve?
-- how do terminal backends abstract away the execution environment?
-- when should a single-agent system grow into gateway, scheduling, MCP, and voice?
-
-If you can answer those questions clearly and build a similar system yourself, this repo has done its job.
+如果这些问题你都能清楚回答，而且能自己写出一个相似系统，那这套仓库就达到了它的目的。
 
 ---
 
-**This is not "copy the source code line by line." This is "grasp the designs that truly matter, then build it yourself."**
+**这不是"照着源码抄"。这是"抓住真正关键的设计，然后自己做出来"。**

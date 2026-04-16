@@ -4,6 +4,8 @@
 
 > *用户很少主动说"帮我记住这个"。agent 需要自己注意到什么值得记、什么值得抽象成技能——然后在后台默默完成，不打断用户的工作。*
 
+![后台审视流程](../../illustrations/s20-background-review/01-flowchart-background-review.png)
+
 ## 这一章要解决什么问题
 
 s07 讲了记忆系统，s08 讲了技能系统。但它们都有一个前提：**agent 主动调用了 memory 或 skill_manage 工具。**

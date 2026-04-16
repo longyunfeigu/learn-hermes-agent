@@ -26,6 +26,8 @@
 
 **让 agent 把成功的做法沉淀成文件，下次遇到同类任务时按需加载。**
 
+![工具 vs 技能 vs MCP 三方对比](../../illustrations/s08-skill-system/01-comparison-tool-skill-mcp.png)
+
 ## 先解释几个名词
 
 ### 什么是 skill

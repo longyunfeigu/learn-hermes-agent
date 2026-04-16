@@ -59,6 +59,8 @@ Gateway 场景下"共享 budget"的意思：
 
 子 agent 不是"另外给 90"，而是从父 agent 的钱包里扣。所以叫 budget。
 
+![Iteration Budget 迭代预算概念](../../illustrations/s01-agent-loop/06-infographic-budget-chalkboard.png)
+
 ### finish_reason
 
 模型返回的"我为什么停下来"。
@@ -111,9 +113,13 @@ client.chat.completions.create(messages=api_messages, ...)
 
 一句话：**messages 是底稿，api_messages 是每次寄出去的信件**。
 
+![messages vs api_messages 对比](../../illustrations/s01-agent-loop/07-comparison-messages-chalkboard.png)
+
 这个区分在教学第一版里可以先忽略，但你要知道它存在。
 
 ## 最小心智模型
+
+![Agent Loop 核心循环流程](../../illustrations/s01-agent-loop/05-flowchart-chalkboard.png)
 
 ```text
 user message

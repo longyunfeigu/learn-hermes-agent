@@ -24,6 +24,8 @@
 
 Hermes Agent 的做法不是简单的 try/except + retry。它先对错误做分类，再根据分类选择恢复策略。而且因为它支持 200+ 模型和多个提供商，错误种类比单提供商 agent 多得多。
 
+![错误分类与恢复策略](../../illustrations/s06-error-recovery/01-flowchart-error-classification.png)
+
 ## 先解释几个名词
 
 ### 什么叫错误分类

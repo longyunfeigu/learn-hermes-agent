@@ -4,6 +4,8 @@
 
 > *到 s21，agent 的核心能力和自我进化机制都已经完整了。但如果你想在"agent 每次启动时自检一遍"或"每次工具调用前加一层审计"——你不需要改核心代码，只需要挂一个 hook。*
 
+![生命周期 Hook 系统](../../illustrations/s22-hook-system/01-framework-lifecycle-hooks.png)
+
 ## 这一章要解决什么问题
 
 三个场景。

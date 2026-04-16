@@ -4,6 +4,8 @@
 
 > *terminal 让 agent 操作文件系统，browser 让 agent 操作网页。agent 看到的不是 HTML，而是一棵"页面上有什么可以点"的语义树。*
 
+![浏览器自动化与无障碍树](../../illustrations/s17-browser/01-flowchart-accessibility-tree.png)
+
 ## 这一章要解决什么问题
 
 agent 可以用 terminal 跑命令、用 read_file 读文件。但如果你让它"帮我在 GitHub 上提一个 issue"，它能做的只有调 API。

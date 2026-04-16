@@ -52,6 +52,8 @@ Discord 适配器想读历史消息 → ❌ 等着，读都不行
 
 CLI 单人用无所谓，但 Gateway 模式下多个平台同时收发消息，这就卡住了。
 
+![SQLite 默认模式 vs WAL 模式](../../illustrations/s03-session-store/01-comparison-wal.png)
+
 **WAL 模式怎么解决的？**
 
 开了 WAL 之后，写操作先写到一个临时的日志文件里，不动主数据库。读操作继续读主数据库文件，不受影响：
@@ -107,6 +109,8 @@ session_003 (又压缩了一次)
 这让你能按平台过滤会话："只看 Telegram 的对话"。
 
 ## 最小心智模型
+
+![会话持久化生命周期](../../illustrations/s03-session-store/02-flowchart-session-lifecycle.png)
 
 ```text
 agent 启动

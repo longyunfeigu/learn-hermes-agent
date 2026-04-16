@@ -4,6 +4,8 @@
 
 > *s01-s17 的 agent 一直在一个 `input()`/`print()` 裸终端里跑。真正面向用户时，你需要流式输出、进度反馈、斜杠命令——还需要一个 Web 面板让你不开终端也能管它。*
 
+![CLI 与 Web 双界面](../../illustrations/s19-cli-web/01-comparison-cli-web.png)
+
 ## 这一章要解决什么问题
 
 三个场景。

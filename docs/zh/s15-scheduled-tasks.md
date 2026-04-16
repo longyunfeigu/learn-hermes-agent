@@ -4,6 +4,8 @@
 
 > *s01-s14 的 agent 只能被动响应——用户发消息它才做事。这一章让 agent 学会"记住未来该做什么"，到时间自己动手。*
 
+![定时任务生命周期](../../illustrations/s15-scheduled-tasks/01-flowchart-task-lifecycle.png)
+
 ## 这一章要解决什么问题
 
 到 s14 为止，agent 的工作方式是：用户说一句话 → agent 做事 → 回复。用户不说话，agent 就闲着。

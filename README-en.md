@@ -96,39 +96,23 @@ Do not open random chapters first.
 The safest path is:
 
 1. Read [`docs/en/s00-architecture-overview.md`](./docs/en/s00-architecture-overview.md) for the full system map.
-2. Read [`docs/en/s00d-chapter-order-rationale.md`](./docs/en/s00d-chapter-order-rationale.md) so the chapter order makes sense before you dive into mechanism detail.
-3. Read [`docs/en/s00f-code-reading-order.md`](./docs/en/s00f-code-reading-order.md) so you know which source files to open first.
-4. Follow the four stages in order: `s01-s06 -> s07-s11 -> s12-s15 -> s16-s20`.
-5. After each stage, stop and rebuild the smallest version yourself before continuing.
+2. Read [`docs/en/s00f-code-reading-order.md`](./docs/en/s00f-code-reading-order.md) so you know which source files to open first.
+3. Follow the five stages in order: `s01-s06 -> s07-s11 -> s12-s15 -> s16-s20 -> s21-s27`.
+4. After each stage, stop and rebuild the smallest version yourself before continuing.
 
 If the middle and late chapters start to blur together, reset in this order:
 
 1. [`docs/en/data-structures.md`](./docs/en/data-structures.md)
 2. [`docs/en/entity-map.md`](./docs/en/entity-map.md)
-3. the bridge docs closest to the chapter you are stuck on
-4. then return to the chapter body
-
-## Bridge Docs
-
-These are not extra main chapters. They are bridge documents that make the middle and late system easier to understand:
-
-- Chapter order rationale: [`docs/en/s00d-chapter-order-rationale.md`](./docs/en/s00d-chapter-order-rationale.md)
-- Code reading order: [`docs/en/s00f-code-reading-order.md`](./docs/en/s00f-code-reading-order.md)
-- Reference module map: [`docs/en/s00e-reference-module-map.md`](./docs/en/s00e-reference-module-map.md)
-- One request lifecycle: [`docs/en/s00b-one-request-lifecycle.md`](./docs/en/s00b-one-request-lifecycle.md)
-- Tool dispatch pipeline: [`docs/en/s02a-tool-dispatch-pipeline.md`](./docs/en/s02a-tool-dispatch-pipeline.md)
-- Message and prompt pipeline: [`docs/en/s04a-message-prompt-pipeline.md`](./docs/en/s04a-message-prompt-pipeline.md)
-- Gateway message flow: [`docs/en/s12a-gateway-message-flow.md`](./docs/en/s12a-gateway-message-flow.md)
-- Platform adapter pattern: [`docs/en/s13a-platform-adapter-pattern.md`](./docs/en/s13a-platform-adapter-pattern.md)
-- Entity map: [`docs/en/entity-map.md`](./docs/en/entity-map.md)
+3. then return to the chapter body
 
 ## Five Stages
 
 1. `s01-s06`: build a working single-agent core with persistence
-2. `s07-s11`: add intelligence — memory, skills, safety, delegation, and error recovery
+2. `s07-s11`: add intelligence — memory, skills, safety, delegation, and configuration
 3. `s12-s15`: go multi-platform — gateway, adapters, terminal backends, and scheduling
-4. `s16-s20`: add advanced capabilities — MCP, browser, voice, vision, and full integration
-5. `s21-s25`: self-improvement — skill creation, hooks, trajectory/RL, plugins, and skill evolution
+4. `s16-s20`: add advanced capabilities — MCP, browser, voice, vision, and background review
+5. `s21-s27`: self-improvement — skill creation, hooks, trajectory/RL, plugins, evaluation, and optimization
 
 ## Main Chapters
 
@@ -154,7 +138,7 @@ These are not extra main chapters. They are bridge documents that make the middl
 | `s17` | Browser Automation | Playwright + Browserbase for web interaction |
 | `s18` | Voice & Vision | TTS/STT pipelines and image analysis |
 | `s19` | CLI Interface | prompt_toolkit + Rich for an interactive terminal experience |
-| `s20` | Full System | everything wired together — the complete Hermes Agent |
+| `s20` | Background Review | every N turns, a background pass updates memory and extracts skills |
 | `s21` | Skill Creation Loop | background review extracts patterns into reusable skills |
 | `s22` | Hook System | lifecycle hooks for extensibility without modifying core code |
 | `s23` | Trajectory & RL | conversation trajectories become training data for model improvement |
@@ -192,8 +176,8 @@ If this is your first time learning this material systematically, do not spread 
 | `s17` | `browser_tool` / Playwright / Browserbase provider | a browser automation layer for web interaction |
 | `s18` | `tts_tool` / `voice_mode` / `vision_tools` | multimodal pipelines: voice I/O + image analysis |
 | `s19` | `HermesCLI` / `CommandDef` / `KawaiiSpinner` / Rich rendering | a fully-featured interactive terminal interface |
-| `s20` | all of the above | everything assembled into a complete system |
-| `s21` | `BackgroundReviewer` / `_SKILL_REVIEW_PROMPT` / trigger logic | a "discover patterns → create skill" background review loop |
+| `s20` | `BackgroundReviewer` / `_MEMORY_REVIEW_PROMPT` / dual trigger counters | an "every N turns, auto-reflect → update memory/skills" background review mechanism |
+| `s21` | skill creation loop / pattern extraction prompt / skill persistence pipeline | the "discover patterns → create reusable skills" prerequisite for self-evolution |
 | `s22` | `HookRegistry` / `PluginHookRegistry` / BOOT.md handler | lifecycle hooks — inject custom logic without modifying core code |
 | `s23` | `convert_to_trajectory()` / `compress_trajectory()` / reward functions | conversation data → training pipeline for model improvement |
 | `s24` | plugin interfaces / memory providers / compression providers | pluggable memory and compression without touching core code |
@@ -209,7 +193,7 @@ Best for readers encountering agent systems for the first time.
 
 Read in this order:
 
-`s00 -> s01 -> s02 -> s03 -> s04 -> s05 -> s06 -> s07 -> s08 -> s09 -> s10 -> s11 -> s12 -> s13 -> s14 -> s15 -> s16 -> s17 -> s18 -> s19 -> s20`
+`s00 -> s01 -> ... -> s20 -> s21 -> ... -> s27` (follow the numbers; `s24` is docs-only).
 
 ### Approach 2: Build First, Complete Later
 
@@ -220,7 +204,8 @@ Read in this order:
 1. `s01-s06`: build a core agent with persistence and context compression
 2. `s07-s11`: add memory, skills, safety, delegation, and config
 3. `s12-s15`: go multi-platform, learn cross-environment execution
-4. `s16-s20`: add advanced capabilities, assemble the complete system
+4. `s16-s20`: advanced capabilities plus the background self-review
+5. `s21-s27`: step into self-evolution — skill creation, hooks, trajectories, evaluation, and optimization
 
 ### Approach 3: When You Get Stuck
 
@@ -288,14 +273,17 @@ go back to:
 
 ```text
 learn-hermes-agent/
-├── agents/              # runnable Python reference implementations per chapter
+├── agents/              # runnable Python reference implementations per chapter (s24 is an exception, see below)
 ├── docs/zh/             # Chinese mainline docs
 ├── docs/en/             # English docs
+├── illustrations/       # chalkboard-style diagrams for each chapter
 ├── tests/               # smoke tests
 ├── web/                 # web teaching platform (optional)
 ├── .env.example         # environment variable template
 └── requirements.txt     # Python dependencies
 ```
+
+> Note: `s24 Plugin Architecture` currently ships with documentation only (`docs/en/s24-plugin-architecture.md` and the Chinese counterpart). There is no `agents/s24_*.py` reference implementation. The doc is self-contained and does not block the rest of the reading order.
 
 ## Teaching Tradeoffs
 
@@ -315,7 +303,7 @@ This means the repo aims for:
 Chinese is the canonical teaching line and the fastest-moving version.
 
 - `zh`: most reviewed and most complete
-- `en`: main chapters available
+- `en`: all chapters s00-s27 available; Chinese is updated first
 
 If you want the fullest and most frequently refined explanation path, use the Chinese docs first.
 

@@ -98,41 +98,25 @@
 最稳的入口顺序是：
 
 1. 先看 [`docs/zh/s00-architecture-overview.md`](./docs/zh/s00-architecture-overview.md)，确认系统全景。
-2. 再看 [`docs/zh/s00d-chapter-order-rationale.md`](./docs/zh/s00d-chapter-order-rationale.md)，确认为什么主线必须按这个顺序长出来。
-3. 再看 [`docs/zh/s00f-code-reading-order.md`](./docs/zh/s00f-code-reading-order.md)，确认本地 `agents/*.py` 该按什么顺序打开。
-4. 然后按四阶段读主线：`s01-s06 -> s07-s11 -> s12-s15 -> s16-s20`。
-5. 每学完一个阶段，停下来自己手写一个最小版本，不要等全部看完再回头补实现。
+2. 再看 [`docs/zh/s00f-code-reading-order.md`](./docs/zh/s00f-code-reading-order.md)，确认本地 `agents/*.py` 该按什么顺序打开。
+3. 然后按五阶段读主线：`s01-s06 -> s07-s11 -> s12-s15 -> s16-s20 -> s21-s27`。
+4. 每学完一个阶段，停下来自己手写一个最小版本，不要等全部看完再回头补实现。
 
 如果你读到一半开始打结，最稳的重启顺序是：
 
 1. [`docs/zh/data-structures.md`](./docs/zh/data-structures.md)
 2. [`docs/zh/entity-map.md`](./docs/zh/entity-map.md)
-3. 当前卡住章节对应的桥接文档
-4. 再回当前章节正文
+3. 再回当前章节正文
 
-## 桥接阅读
-
-下面这些文档不是新的主线章节，而是帮助你把中后半程真正讲透的"桥接层"：
-
-- 为什么是这个章节顺序：[`docs/zh/s00d-chapter-order-rationale.md`](./docs/zh/s00d-chapter-order-rationale.md)
-- 本仓库代码阅读顺序：[`docs/zh/s00f-code-reading-order.md`](./docs/zh/s00f-code-reading-order.md)
-- 参考仓库模块映射图：[`docs/zh/s00e-reference-module-map.md`](./docs/zh/s00e-reference-module-map.md)
-- 一次请求的完整生命周期：[`docs/zh/s00b-one-request-lifecycle.md`](./docs/zh/s00b-one-request-lifecycle.md)
-- 工具分发管道：[`docs/zh/s02a-tool-dispatch-pipeline.md`](./docs/zh/s02a-tool-dispatch-pipeline.md)
-- 消息与提示词管道：[`docs/zh/s04a-message-prompt-pipeline.md`](./docs/zh/s04a-message-prompt-pipeline.md)
-- Gateway 消息流：[`docs/zh/s12a-gateway-message-flow.md`](./docs/zh/s12a-gateway-message-flow.md)
-- 平台适配器模式：[`docs/zh/s13a-platform-adapter-pattern.md`](./docs/zh/s13a-platform-adapter-pattern.md)
-- 系统实体边界图：[`docs/zh/entity-map.md`](./docs/zh/entity-map.md)
-
-## 四阶段主线
+## 五阶段主线
 
 | 阶段 | 目标 | 章节 |
 |---|---|---|
 | 阶段 1 | 先做出一个能工作、能持久化的单 agent | `s01-s06` |
-| 阶段 2 | 再补智能层 — 记忆、技能、安全、委派、容错 | `s07-s11` |
+| 阶段 2 | 再补智能层 — 记忆、技能、安全、委派、配置 | `s07-s11` |
 | 阶段 3 | 跨平台 — Gateway、适配器、终端后端、定时任务 | `s12-s15` |
-| 阶段 4 | 高级能力 — MCP、浏览器、语音、视觉、完整集成 | `s16-s20` |
-| 阶段 5 | 自我进化 — 技能创作、Hook、轨迹/RL、插件、技能自进化 | `s21-s25` |
+| 阶段 4 | 高级能力 — MCP、浏览器、语音、视觉、后台审视 | `s16-s20` |
+| 阶段 5 | 自我进化 — 技能创作、Hook、轨迹/RL、插件、技能自进化 | `s21-s27` |
 
 ## 全部章节
 
@@ -158,7 +142,7 @@
 | `s17` | Browser Automation | Playwright + Browserbase 网页交互 |
 | `s18` | Voice & Vision | TTS/STT 管道与图像分析 |
 | `s19` | CLI Interface | prompt_toolkit + Rich 交互式终端 |
-| `s20` | Full System | 所有机制组装在一起 — 完整的 Hermes Agent |
+| `s20` | Background Review | 每 N 轮后台审视对话，自动更新记忆、抽取技能 |
 | `s21` | Skill Creation Loop | 后台审视提取模式，自动创建可复用技能 |
 | `s22` | Hook System | 生命周期钩子，不改核心代码扩展行为 |
 | `s23` | Trajectory & RL | 对话轨迹变训练数据，强化学习改进模型 |
@@ -197,8 +181,8 @@
 | `s17` | `browser_tool` / Playwright / Browserbase provider | 一个能自动操作网页的浏览器自动化层 |
 | `s18` | `tts_tool` / `voice_mode` / `vision_tools` | 语音输入输出 + 图像分析的多模态管道 |
 | `s19` | `HermesCLI` / `CommandDef` / `KawaiiSpinner` / Rich 渲染 | 一个功能完整的交互式终端界面 |
-| `s20` | 全部以上 | 所有机制组装成一个完整系统 |
-| `s21` | `BackgroundReviewer` / `_SKILL_REVIEW_PROMPT` / 触发逻辑 | 一套"发现模式→创建技能"的后台审视循环 |
+| `s20` | `BackgroundReviewer` / `_MEMORY_REVIEW_PROMPT` / 双触发计数器 | 一套"每 N 轮自动反思→更新记忆/技能"的后台审视机制 |
+| `s21` | 技能创作循环 / 模式抽取提示词 / 技能落盘管道 | 一套"发现模式→创建可复用技能"的自进化前置能力 |
 | `s22` | `HookRegistry` / `PluginHookRegistry` / BOOT.md 处理 | 生命周期钩子——不改核心代码就能注入自定义逻辑 |
 | `s23` | `convert_to_trajectory()` / `compress_trajectory()` / 奖励函数 | 对话数据→训练管线，用 RL 改进模型 |
 | `s24` | 插件接口 / 记忆提供者 / 压缩提供者 | 可插拔的记忆和压缩，不碰核心代码 |
@@ -214,7 +198,7 @@
 
 按这个顺序读：
 
-`s00 -> s01 -> s02 -> s03 -> s04 -> s05 -> s06 -> s07 -> s08 -> s09 -> s10 -> s11 -> s12 -> s13 -> s14 -> s15 -> s16 -> s17 -> s18 -> s19 -> s20`
+`s00 -> s01 -> ... -> s20 -> s21 -> ... -> s27`（按编号顺序，`s24` 只有文档无实现）
 
 ### 读法 2：先做出能跑的，再补完整
 
@@ -225,7 +209,8 @@
 1. `s01-s06`：先做出一个能持久化、能压缩上下文的核心 agent
 2. `s07-s11`：补上记忆、技能、安全、委派和配置
 3. `s12-s15`：接入多平台，学会跨环境执行
-4. `s16-s20`：补高级能力，组装完整系统
+4. `s16-s20`：补高级能力与后台自反思
+5. `s21-s27`：进入自我进化 — 技能创作、钩子、轨迹、评估、优化
 
 ### 读法 3：卡住时这样回看
 
@@ -311,7 +296,7 @@ python agents/s01_agent_loop.py
 
 ```text
 learn-hermes-agent/
-├── agents/              # 每一章对应一个可运行的 Python 参考实现
+├── agents/              # 每一章对应一个可运行的 Python 参考实现（s24 例外，见下）
 ├── docs/zh/             # 中文主线文档
 ├── docs/en/             # 英文文档
 ├── illustrations/       # 每章配套的黑板风格插图（chalkboard style）
@@ -320,6 +305,8 @@ learn-hermes-agent/
 ├── .env.example         # 环境变量示例
 └── requirements.txt     # Python 依赖
 ```
+
+> 注：`s24 Plugin Architecture` 当前仅提供文档（`docs/zh/s24-plugin-architecture.md` 和英文对应），未提供 `agents/s24_*.py` 参考实现。文档本身可独立阅读，不影响其他章节的学习顺序。
 
 ## 语言说明
 

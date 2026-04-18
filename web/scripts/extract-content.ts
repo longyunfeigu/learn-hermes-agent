@@ -7,6 +7,8 @@ const WEB_DIR = path.resolve(__dirname, "..");
 const REPO_ROOT = path.resolve(WEB_DIR, "..");
 const AGENTS_DIR = path.join(REPO_ROOT, "agents");
 const DOCS_DIR = path.join(REPO_ROOT, "docs");
+const ILLUSTRATIONS_DIR = path.join(REPO_ROOT, "illustrations");
+const PUBLIC_DIR = path.join(WEB_DIR, "public");
 const OUT_DIR = path.join(WEB_DIR, "src", "data", "generated");
 
 // ---------------------------------------------------------------------------
@@ -132,7 +134,9 @@ function main() {
         const version = extractDocVersion(filename);
         const kind = isMainlineChapter(version) ? "chapter" : "bridge";
         const filePath = path.join(localeDir, filename);
-        const content = fs.readFileSync(filePath, "utf-8");
+        const rawContent = fs.readFileSync(filePath, "utf-8");
+        // Rewrite illustration paths: ../../illustrations/... -> /illustrations/...
+        const content = rawContent.replace(/\.\.\/\.\.\/illustrations\//g, "/illustrations/");
         const titleMatch = content.match(/^#\s+(.+)$/m);
 
         docs.push({
@@ -151,7 +155,17 @@ function main() {
     console.log("  Docs directory not found, skipping.");
   }
 
-  // 3. Write output
+  // 3. Link illustrations into public/ so images referenced as /illustrations/... resolve
+  if (fs.existsSync(ILLUSTRATIONS_DIR)) {
+    fs.mkdirSync(PUBLIC_DIR, { recursive: true });
+    const linkPath = path.join(PUBLIC_DIR, "illustrations");
+    const linkStat = fs.lstatSync(linkPath, { throwIfNoEntry: false });
+    if (linkStat) fs.rmSync(linkPath, { recursive: true, force: true });
+    fs.symlinkSync(ILLUSTRATIONS_DIR, linkPath, "dir");
+    console.log(`  Linked illustrations -> ${linkPath}`);
+  }
+
+  // 4. Write output
   fs.mkdirSync(OUT_DIR, { recursive: true });
 
   const versionsPath = path.join(OUT_DIR, "versions.json");

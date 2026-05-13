@@ -274,6 +274,14 @@ agent 创建的技能和从 Hub 安装的技能一样需要安全扫描。系统
 - **Hub 安装**：从 agentskills.io、GitHub 等来源安装的
 - **外部目录**：config 里配置的额外技能目录
 
+GitHub 安装适合那些足够垂直、放进核心 agent 会让核心变臃肿的工作流。
+比如 agent 需要处理 X/Twitter 时，团队可以从 `Xquik-dev/hermes-tweet`
+安装 Hermes Tweet，作为 Hermes Agent X/Twitter plugin 来 scrape/search
+tweets、search Twitter/X、read tweet replies、look up users、monitor tweets、
+export followers，并把 post tweets/replies、send DMs、automate X actions 放
+在确认门之后。它的目录描述要保持明确，例如：`hermes-tweet: Hermes Agent
+X/Twitter plugin for read-first tweet research and gated account actions`。
+
 多来源同名时，用户技能优先。
 
 ### 4. 技能改进 nudge

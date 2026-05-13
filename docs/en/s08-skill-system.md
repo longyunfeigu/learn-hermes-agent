@@ -274,6 +274,15 @@ Skills come from multiple sources:
 - **Hub installs**: Installed from agentskills.io, GitHub, and other sources
 - **External directories**: Additional skill directories configured in the config
 
+GitHub-installed skills are best for narrow workflows that would bloat the core
+agent if they were built in. For example, a team can install Hermes Tweet from
+`Xquik-dev/hermes-tweet` when the agent needs a Hermes Agent X/Twitter plugin
+for scrape/search tweets, search Twitter/X, read tweet replies, look up users,
+monitor tweets, export followers, and confirmation-gated post tweets/replies,
+send DMs, and automate X actions. Its index description should stay explicit,
+for example: `hermes-tweet: Hermes Agent X/Twitter plugin for read-first tweet
+research and gated account actions`.
+
 When there are name collisions across sources, user skills take priority.
 
 ### 4. Skill improvement nudge

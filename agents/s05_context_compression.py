@@ -6,8 +6,13 @@ See: docs/zh/s05-context-compression.md | docs/en/s05-context-compression.md
 Builds on s04 by adding a two-stage compressor triggered on token-estimate:
   1) Prune: replace all but the most recent tool outputs with a placeholder.
   2) Summarize: ask an LLM to condense the middle turns, keep head+tail intact.
-The summary is spliced back in as a [CONTEXT COMPACTION] message, so the model
-keeps task continuity without carrying the full history.
+
+But summary alone is lossy. So we also introduce a TaskState living *outside*
+the message stream -- the agent maintains `goal` + `todos` explicitly via three
+tools (task_set_goal / todo_write / todo_update). TaskState is re-rendered into
+the system prompt every turn and is never touched by compression. This is the
+load-bearing layer for task continuity; summary degrades to a "what happened
+in the middle" memo.
 
 Usage:
     export OPENAI_API_KEY=sk-xxx
@@ -20,7 +25,7 @@ import sqlite3
 import subprocess
 import time
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Callable
@@ -44,6 +49,9 @@ COMPRESSION_THRESHOLD = 50000       # 估算 token 超过这个阈值就触发�
 PROTECT_FIRST = 3                   # 头部保护区消息数（user 首问 + 早期工具成果往往最关键）
 KEEP_RECENT_TOOL_RESULTS = 3        # 仅保留最近 N 条 tool 输出原文，更早的清空占位
 TAIL_TOKEN_BUDGET = 20000           # 尾部预算：从后往前累加，直到撞线，留给模型"最近记忆"
+SUMMARY_MAX_TOKENS = 3000           # 摘要 LLM 调用的 max_tokens
+SUMMARY_PER_MSG_CHARS = 2000        # 喂给摘要器时，单条消息的截断上限
+COMPRESSION_MIN_SHRINK = 0.9        # 压缩后必须降到原 token 的 90% 以下，否则视为卡死
 
 client = OpenAI(base_url=BASE_URL, api_key=API_KEY)
 
@@ -212,6 +220,166 @@ registry.register(
 
 
 # ===========================================================================
+# Task state (NEW in this chapter)
+# ===========================================================================
+# 摘要是有损的；目标和进度不能托管给摘要器。TaskState 由 agent 通过工具显式
+# 维护，活在消息流之外，每轮重新渲染进 system prompt。压缩管不到这里。
+
+
+@dataclass
+class TaskState:
+    """Uncompressible task layer: goal + todo list, lives outside messages."""
+    goal: str = ""
+    todos: list[dict] = field(default_factory=list)
+    # 每个 todo: {"id": str, "subject": str, "status": "pending"|"in_progress"|"completed"}
+
+    def render(self) -> str:
+        """Render as a markdown section to splice into system prompt."""
+        # 空态返回空串，避免在系统提示里塞无意义的小节
+        if not self.goal and not self.todos:
+            return ""
+
+        lines = ["# Task State (live, never compressed)"]
+        if self.goal:
+            lines.append("")
+            lines.append("## Goal")
+            lines.append(self.goal)
+        if self.todos:
+            lines.append("")
+            lines.append("## TODO")
+            markers = {
+                "pending": "[ ]",
+                "in_progress": "[~]",
+                "completed": "[x]",
+            }
+            for todo in self.todos:
+                marker = markers.get(todo.get("status", "pending"), "[ ]")
+                lines.append(
+                    f"{marker} ({todo['id']}) {todo['subject']}"
+                )
+        return "\n".join(lines)
+
+
+def handle_task_set_goal(args, *, task_state: TaskState | None = None, **kwargs):
+    """Record the active task goal."""
+    if task_state is None:
+        return "(error: task_state not available)"
+    task_state.goal = args.get("goal", "").strip()
+    return f"Goal set: {task_state.goal[:80]}"
+
+
+registry.register(
+    name="task_set_goal",
+    toolset="task",
+    schema={
+        "name": "task_set_goal",
+        "description": (
+            "Record what the user is asking you to accomplish in this task. "
+            "Call once at the start of any multi-step task."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "goal": {"type": "string"},
+            },
+            "required": ["goal"],
+        },
+    },
+    handler=handle_task_set_goal,
+)
+
+
+def handle_todo_write(args, *, task_state: TaskState | None = None, **kwargs):
+    """Replace the entire todo list. Auto-fills id/status if omitted."""
+    if task_state is None:
+        return "(error: task_state not available)"
+    items = args.get("items", [])
+    normalized = []
+    for index, item in enumerate(items):
+        normalized.append({
+            "id": item.get("id") or f"t{index + 1}",
+            "subject": item.get("subject", ""),
+            "status": item.get("status", "pending"),
+        })
+    task_state.todos = normalized
+    return f"TODO updated ({len(normalized)} items)"
+
+
+registry.register(
+    name="todo_write",
+    toolset="task",
+    schema={
+        "name": "todo_write",
+        "description": (
+            "Write or replace the entire todo list for the active task. "
+            "Use for multi-step work: list the steps once, then call "
+            "todo_update as you finish each one."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {"type": "string"},
+                            "subject": {"type": "string"},
+                            "status": {
+                                "type": "string",
+                                "enum": ["pending", "in_progress", "completed"],
+                            },
+                        },
+                        "required": ["subject"],
+                    },
+                },
+            },
+            "required": ["items"],
+        },
+    },
+    handler=handle_todo_write,
+)
+
+
+def handle_todo_update(args, *, task_state: TaskState | None = None, **kwargs):
+    """Change the status of a single todo by id."""
+    if task_state is None:
+        return "(error: task_state not available)"
+    todo_id = args.get("id", "")
+    new_status = args.get("status", "")
+    for todo in task_state.todos:
+        if todo["id"] == todo_id:
+            todo["status"] = new_status
+            return f"TODO {todo_id} -> {new_status}"
+    return f"(error: TODO id {todo_id!r} not found)"
+
+
+registry.register(
+    name="todo_update",
+    toolset="task",
+    schema={
+        "name": "todo_update",
+        "description": (
+            "Update the status of a single todo. Call this each time you "
+            "start (in_progress) or finish (completed) a step."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "id": {"type": "string"},
+                "status": {
+                    "type": "string",
+                    "enum": ["pending", "in_progress", "completed"],
+                },
+            },
+            "required": ["id", "status"],
+        },
+    },
+    handler=handle_todo_update,
+)
+
+
+# ===========================================================================
 # SQLite persistence (reused from s03, simplified)
 # ===========================================================================
 
@@ -306,8 +474,19 @@ def get_session_messages(
 
 
 # ===========================================================================
-# System prompt assembly (reused from s04)
+# System prompt assembly (reused from s04, extended for task state)
 # ===========================================================================
+
+
+TASK_TOOLS_GUIDANCE = """\
+# Task discipline
+For any multi-step task (e.g. reading many files, refactoring a module),
+first call `task_set_goal` to record what the user asked. Then call
+`todo_write` to lay out the steps. As you work, call `todo_update` to mark
+each step in_progress / completed. This state is the source of truth for
+progress -- the model's message history may be compressed, but the task
+state is always shown to you intact.
+"""
 
 
 def load_soul() -> str:
@@ -342,7 +521,7 @@ def find_project_context(cwd: str) -> str:
 
 
 def build_system_prompt(cwd: str) -> str:
-    """Assemble the system prompt from multiple sources."""
+    """Assemble the static portion of the system prompt (cached across turns)."""
     parts = [load_soul()]
 
     memory = load_memory()
@@ -353,6 +532,8 @@ def build_system_prompt(cwd: str) -> str:
     if project:
         parts.append(f"# Project Context\n{project}")
 
+    parts.append(TASK_TOOLS_GUIDANCE)
+
     parts.append(
         f"Current time: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n"
         f"Working directory: {cwd}"
@@ -361,10 +542,32 @@ def build_system_prompt(cwd: str) -> str:
     return "\n\n".join(parts)
 
 
+def compose_system_prompt(cached_prompt: str, task_state: TaskState) -> str:
+    """Splice live TaskState into the cached prompt for one API turn."""
+    # TaskState 部分不参与缓存：它每轮都可能变；其它部分稳定，留给上层做 prompt cache
+    rendered = task_state.render()
+    if not rendered:
+        return cached_prompt
+    return f"{cached_prompt}\n\n{rendered}"
+
+
 # ===========================================================================
 # Context compression (new in this chapter)
 # ===========================================================================
 # 压缩分两步：先把老的 tool 输出 prune 掉（它们往往最肥），再 summarize 中段
+
+
+class CompressionStuckError(RuntimeError):
+    """Raised when compress() cannot meaningfully shrink the message list."""
+
+    def __init__(self, before: int, after: int):
+        self.before = before
+        self.after = after
+        super().__init__(
+            f"Compression failed to shrink context "
+            f"({before} -> {after} tokens, "
+            f"need <= {int(before * COMPRESSION_MIN_SHRINK)})"
+        )
 
 
 def estimate_tokens(messages: list[dict]) -> int:
@@ -398,17 +601,34 @@ def prune_old_tool_results(
     return messages
 
 
+def _align_to_assistant_boundary(
+    messages: list[dict],
+    index: int,
+) -> int:
+    """Walk forward past any `tool` messages so we land on an assistant turn.
+
+    A tool message without its preceding assistant.tool_calls is an orphan
+    that the API will reject. So if a proposed cut lands on a tool, we
+    advance until the next non-tool message (effectively dropping that
+    tool group along with the assistant that owned it -- they are a unit).
+    """
+    while index < len(messages) and messages[index].get("role") == "tool":
+        index += 1
+    return index
+
+
 def find_boundaries(
     messages: list[dict],
     protect_first: int,
     tail_token_budget: int,
 ) -> tuple[int, int]:
-    """Find the compressible middle region: protect head + protect tail."""
-    # 从尾部往前累加 token，直到 tail_start 处的累计量逼近预算；中间段 [head_end, tail_start) 就是要摘要的部分
-    head_end = protect_first
+    """Find the compressible middle region, aligned to assistant boundaries."""
+    # 从尾部往前累加 token 直到撞预算，得到候选 tail_start；然后两个边界都对齐
+    # 到非 tool 的位置，避免切出孤儿 tool 消息触发 API 配对错误
+    head_end = _align_to_assistant_boundary(messages, protect_first)
+
     tail_start = len(messages)
     tail_tokens = 0
-
     for index in range(len(messages) - 1, head_end - 1, -1):
         msg_tokens = len(str(messages[index].get("content", ""))) // 4
         if tail_tokens + msg_tokens > tail_token_budget:
@@ -416,66 +636,117 @@ def find_boundaries(
         tail_tokens += msg_tokens
         tail_start = index
 
+    tail_start = _align_to_assistant_boundary(messages, tail_start)
+    if tail_start < head_end:
+        tail_start = head_end
+
     return head_end, tail_start
 
 
-def summarize_middle(turns: list[dict]) -> str:
+def summarize_middle(
+    turns: list[dict],
+    original_query: str = "",
+    previous_summary: str = "",
+) -> str:
     """Use an auxiliary LLM call to summarize the middle conversation turns."""
-    # 固定段落结构让模型照格子填，便于后面主对话复用；每条消息截 500 字避免 prompt 爆炸
-    prompt = (
-        "Summarize these conversation turns concisely.\n"
-        "Sections: Goal, Progress, Key Decisions, "
-        "Files Modified, Next Steps.\n\n"
-    )
+    # 显式喂入原始用户请求和上一份摘要：让摘要器站在"目标 + 已有摘要"基础上
+    # 增量更新，而不是每轮重新从零写一份（信息熵会指数级衰减）
+    sections = [
+        "Summarize these conversation turns concisely.",
+        "Output exactly these sections: Goal, Progress, Key Decisions, "
+        "Files Modified, Next Steps.",
+    ]
+    if original_query:
+        sections.append(f"\nORIGINAL USER REQUEST:\n{original_query[:1000]}")
+    if previous_summary:
+        sections.append(
+            f"\nPREVIOUS SUMMARY (update, do not rewrite from scratch):\n"
+            f"{previous_summary[:2000]}"
+        )
+    sections.append("\nMIDDLE TURNS TO SUMMARIZE:")
+
+    prompt_lines = ["\n".join(sections)]
     for msg in turns:
-        content_preview = str(msg.get("content", ""))[:500]
-        prompt += f"[{msg['role']}] {content_preview}\n"
+        content_preview = str(msg.get("content", ""))[:SUMMARY_PER_MSG_CHARS]
+        prompt_lines.append(f"[{msg['role']}] {content_preview}")
+    prompt = "\n".join(prompt_lines)
 
     try:
         response = client.chat.completions.create(
             model=MODEL,
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=1000,
+            max_tokens=SUMMARY_MAX_TOKENS,
         )
         return response.choices[0].message.content or "(summary failed)"
     except Exception as exc:
         return f"(summary error: {exc})"
 
 
-def compress(messages: list[dict]) -> list[dict]:
-    """Perform one round of context compression."""
-    # 1) prune 老 tool 输出；2) 定位中段；3) LLM 摘要后拼回
+def compress(
+    messages: list[dict],
+    previous_summary: str = "",
+) -> tuple[list[dict], str | None]:
+    """Perform one round of context compression.
+
+    Returns (new_messages, new_summary_or_None). Raises CompressionStuckError
+    if the result is not at least COMPRESSION_MIN_SHRINK smaller than input.
+    """
+    before = estimate_tokens(messages)
     messages = prune_old_tool_results(list(messages))
     head_end, tail_start = find_boundaries(
         messages, PROTECT_FIRST, TAIL_TOKEN_BUDGET
     )
 
-    # 尾部已经覆盖到头部保护区之前：说明总量本来就不大，不值得摘要
+    # 中段为空：要么消息总量本来就小，要么对齐后无可压缩；判断是否仍超限
     if tail_start <= head_end:
-        return messages
+        after = estimate_tokens(messages)
+        if after >= int(before * COMPRESSION_MIN_SHRINK):
+            raise CompressionStuckError(before, after)
+        return messages, None
 
     middle = messages[head_end:tail_start]
-    summary = summarize_middle(middle)
+    original_query = ""
+    if messages and messages[0].get("role") == "user":
+        original_query = str(messages[0].get("content", ""))
+
+    summary = summarize_middle(
+        middle,
+        original_query=original_query,
+        previous_summary=previous_summary,
+    )
 
     print(
         f"  [compress] Compressed {len(middle)} messages "
         f"into summary ({len(summary)} chars)"
     )
 
-    # 用一条 [CONTEXT COMPACTION] user 消息替换原中段
-    # 伪装成 user 消息是为了避开 assistant/tool 配对校验
-    return (
+    # 摘要 role 必须是 assistant：role=user 会被模型理解为新的用户指令
+    # 触发重新规划；role=system 在 OpenAI 中段被部分模型忽略。assistant 最稳。
+    compaction_msg = {
+        "role": "assistant",
+        "content": (
+            "[CONTEXT COMPACTION - system-generated summary of earlier turns, "
+            "not a new instruction]\n\n" + summary
+        ),
+    }
+    new_messages = (
         messages[:head_end]
-        + [{"role": "user", "content": f"[CONTEXT COMPACTION]\n{summary}"}]
+        + [compaction_msg]
         + messages[tail_start:]
     )
 
+    after = estimate_tokens(new_messages)
+    if after >= int(before * COMPRESSION_MIN_SHRINK):
+        # 压缩没收缩到 90% 以下：通常是头部本身就过大，再压也没用
+        raise CompressionStuckError(before, after)
+    return new_messages, summary
+
 
 # ===========================================================================
-# Core conversation loop (s04 + compression trigger)
+# Core conversation loop (s04 + compression trigger + task state)
 # ===========================================================================
 
-ENABLED_TOOLSETS = ["terminal", "file"]
+ENABLED_TOOLSETS = ["terminal", "file", "task"]
 
 
 def run_conversation(
@@ -483,22 +754,43 @@ def run_conversation(
     conn: sqlite3.Connection,
     session_id: str,
     cached_prompt: str,
+    task_state: TaskState | None = None,
 ) -> dict:
-    """Run a conversation loop with context compression."""
+    """Run a conversation loop with context compression and task state."""
+    if task_state is None:
+        task_state = TaskState()
+
     messages = get_session_messages(conn, session_id)
     user_msg = {"role": "user", "content": user_message}
     messages.append(user_msg)
     add_message(conn, session_id, user_msg)
 
     tools = registry.get_definitions(ENABLED_TOOLSETS)
+    previous_summary: str | None = None
 
     for iteration in range(MAX_ITERATIONS):
-        # 每轮发请求前先体检：超阈值就压缩一次；压缩是幂等的，不会重复损伤消息
+        # 每轮发请求前先体检：超阈值就压缩一次；若压缩卡死则早退而不是死磕到 30 轮
         if estimate_tokens(messages) >= COMPRESSION_THRESHOLD:
-            messages = compress(messages)
+            try:
+                messages, new_summary = compress(
+                    messages, previous_summary=previous_summary or ""
+                )
+                if new_summary:
+                    previous_summary = new_summary
+            except CompressionStuckError as exc:
+                return {
+                    "final_response": (
+                        f"(context cannot be compressed further: {exc}. "
+                        f"Start a new session or shrink the task.)"
+                    ),
+                    "messages": messages,
+                    "task_state": task_state,
+                }
 
         api_messages = (
-            [{"role": "system", "content": cached_prompt}] + messages
+            [{"role": "system",
+              "content": compose_system_prompt(cached_prompt, task_state)}]
+            + messages
         )
 
         response = client.chat.completions.create(
@@ -531,6 +823,7 @@ def run_conversation(
             return {
                 "final_response": assistant_msg.content,
                 "messages": messages,
+                "task_state": task_state,
             }
 
         for tool_call in assistant_msg.tool_calls:
@@ -540,7 +833,9 @@ def run_conversation(
                 f"  [tool] {tool_name}: "
                 f"{json.dumps(tool_args, ensure_ascii=False)[:120]}"
             )
-            output = registry.dispatch(tool_name, tool_args)
+            output = registry.dispatch(
+                tool_name, tool_args, task_state=task_state
+            )
             tool_msg = {
                 "role": "tool",
                 "tool_call_id": tool_call.id,
@@ -552,6 +847,7 @@ def run_conversation(
     return {
         "final_response": "(max iterations reached)",
         "messages": messages,
+        "task_state": task_state,
     }
 
 
@@ -569,6 +865,7 @@ if __name__ == "__main__":
     conn = init_db(DB_PATH)
     session_id = create_session(conn)
     cached_prompt = build_system_prompt(os.getcwd())
+    task_state = TaskState()
     print("Type 'quit' to exit.\n")
 
     while True:
@@ -576,7 +873,7 @@ if __name__ == "__main__":
         if not user_input or user_input.lower() in ("quit", "exit"):
             break
         result = run_conversation(
-            user_input, conn, session_id, cached_prompt
+            user_input, conn, session_id, cached_prompt, task_state
         )
         print(f"\nAssistant: {result['final_response']}\n")
 

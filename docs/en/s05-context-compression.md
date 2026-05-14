@@ -159,13 +159,16 @@ The tail is not a fixed "last N messages" -- it is calculated by token budget (a
 
 ```python
 {
-    "role": "user",
-    "content": "[CONTEXT COMPACTION] Earlier turns were compacted...\n\n"
+    "role": "assistant",
+    "content": "[CONTEXT COMPACTION - system-generated summary of earlier "
+               "turns, not a new instruction]\n\n"
                "## Goal\n...\n## Progress\n...\n## Key Decisions\n..."
 }
 ```
 
 Dozens of messages in the middle are replaced by this single summary.
+
+Note that `role` is `assistant`, not `user`: a `user`-role compaction message would be read by the model as "the user just said this" and trigger fresh planning -- often making the agent redo work it already finished. Pairing `assistant` role with an explicit `[CONTEXT COMPACTION - system-generated]` prefix is the stable choice.
 
 ## Minimal implementation
 
@@ -270,9 +273,107 @@ After compression, a new session is created with `parent_session_id` pointing to
 
 After compression, the cached system prompt is invalidated (because memory may have changed) and needs to be reassembled. This is the exception to the `s04` prompt caching mechanism.
 
-### 4. Orphaned tool_call cleanup
+### 4. Boundary alignment prevents orphaned tool_calls
 
-After compression, some assistant messages may have `tool_calls` whose corresponding `tool_result` messages were compressed away. The API requires every pair to match. These orphans must be cleaned up after compression.
+`assistant.tool_calls` and their `tool` responses must remain paired -- leaving the former while compacting away the latter makes the next API request fail outright.
+
+Instead of cleaning up orphans after the fact, `find_boundaries` snaps both proposed cut points forward past any `tool` messages:
+
+```python
+def _align_to_assistant_boundary(messages, index):
+    while index < len(messages) and messages[index].get("role") == "tool":
+        index += 1
+    return index
+```
+
+When the boundary lands on a tool, the loop walks forward until it hits an assistant. The middle slice that gets compressed is therefore always a sequence of complete `assistant ↔ tool` groups -- orphans are impossible by construction.
+
+### 5. Detect stuck compression instead of looping forever
+
+In extreme cases the head section alone consumes most of the budget (e.g. the user's first message is a giant document). Compression has nothing left to operate on, and re-running it round after round is wasted work. `compress` measures the before/after token estimate and raises `CompressionStuckError` if shrinkage falls short of 10%:
+
+```python
+class CompressionStuckError(RuntimeError):
+    """Compress couldn't meaningfully shrink the message list."""
+
+# in compress():
+after = estimate_tokens(new_messages)
+if after >= int(before * COMPRESSION_MIN_SHRINK):
+    raise CompressionStuckError(before, after)
+```
+
+The main loop catches this and exits the current turn cleanly ("context cannot be compressed further -- start a new session") instead of grinding until `MAX_ITERATIONS`. This directly addresses issue #2's report that compression "keeps looping and never finishes".
+
+## Summarization alone is not enough: task state as the uncompressible layer
+
+The three layers above (prune, find boundaries, summarize) solve the problem of "physically shrinking the active context". But there is a class of problem that **no summary, however well-written, can fix**:
+
+**The model's view of the current goal and progress must be lossless.**
+
+Consider the scenario from issue #2: the user says "read all files under agents/". The agent calls `read_file` over and over, packing each file's contents into the context. By the 4th or 5th file the compression threshold trips, and dozens of tool outputs get crushed into one summary:
+
+```text
+Goal: Read all files under agents/
+Progress: Read a few files
+Files Modified: none
+Next Steps: Keep reading the rest
+```
+
+The summary is lossy. It does not list which files remain. It quietly degrades "read s01, s02" into "read a few files". On the next compression pass, that summary gets summarized again -- entropy drops exponentially. The model is forced to replan from a hazy snapshot, and often **re-reads files it has already read**. This is exactly the "keeps compressing, keeps looping" symptom the customer reported.
+
+### Solution: lift task state out of the message stream
+
+Introduce a `TaskState`:
+
+```python
+@dataclass
+class TaskState:
+    goal: str = ""
+    todos: list[dict] = field(default_factory=list)
+    # each todo: {"id", "subject", "status": pending|in_progress|completed}
+```
+
+Its critical properties:
+
+1. **It does not live in `messages`** -- the compression algorithm cannot see it and never touches it.
+2. **Before every API call**, `task_state.render()` is appended to the system prompt. The model sees the full goal and TODO list on every turn.
+3. The agent maintains it through three tools:
+   - `task_set_goal(goal)` -- record the goal at task start
+   - `todo_write(items)` -- lay out the steps (auto-fills missing id and default status)
+   - `todo_update(id, status)` -- flip a step's status as work progresses
+
+A short directive in the system prompt (`TASK_TOOLS_GUIDANCE`) tells the model "for multi-step tasks, list the TODO before working".
+
+### What render() produces
+
+```text
+# Task State (live, never compressed)
+
+## Goal
+Read all files under agents/
+
+## TODO
+[x] (t1) list agents directory
+[x] (t2) read s01_agent_loop.py
+[~] (t3) read s02_tool_system.py
+[ ] (t4) read s03_session_store.py
+...
+```
+
+`[x]` / `[~]` / `[ ]` are the visual markers for completed / in_progress / pending. Looking at this block, the model knows "the next step is t4" without having to dig through a summary in the message history.
+
+### Why this works
+
+The context is now split into two layers with different guarantees:
+
+| Layer | Guarantee | Maintained by | Compression touches it? |
+|---|---|---|---|
+| Message stream | Lossy | Model output | Yes, by token budget |
+| Task state | Lossless | Agent via explicit tools | Never |
+
+The summary still does useful work -- it tells the model "here is roughly what happened in the middle" -- but it no longer carries the load-bearing job of "task continuity", which is more than a one-shot LLM summary can deliver.
+
+> Note: TaskState is distinct from the `s07` memory system. Memory is **cross-session** persistence (user preferences, long-term facts). TaskState is **within a single task**, alive only during the active session.
 
 ## Common beginner mistakes
 
@@ -296,19 +397,26 @@ Compression is a system operation, not a user request. A cheap auxiliary model i
 
 If the most recent messages are compressed too, the agent immediately forgets what it was just doing.
 
+### 6. Letting the summary carry task progress
+
+This is the real root cause of issue #2: delegating "goal / progress / pending steps" -- the load-bearing continuity information -- to the summarizer. Summarization is lossy compression. Across multiple rounds, those details inevitably erode.
+
+Task state belongs **outside** the message stream, maintained explicitly by the agent through dedicated tools (`task_set_goal` / `todo_write` / `todo_update`) and re-rendered into the system prompt every turn. The summary should only carry what it can carry: "what happened in the middle" as a refresher.
+
 ## Teaching boundaries
 
 This chapter should not slide into "an encyclopedia of all compression techniques."
 
-The teaching version only needs to cover three things clearly:
+The teaching version covers four things clearly:
 
 1. Trim old tool outputs first (free)
-2. Protect head and tail, compress only the middle
-3. Use an auxiliary LLM to generate a structured summary that preserves work continuity
+2. Protect head and tail, align to assistant boundaries, compress only the middle
+3. Use an auxiliary LLM to generate a structured summary -- the "middle memo"
+4. Lift goal + progress into a TaskState that lives outside messages, as the lossless source of truth
 
-Deliberately deferred: precise token counting, multi-pass iterative compression strategies, passive compression triggered by API errors (-> `s06`).
+Deliberately deferred: precise token counting, multi-pass iterative compression strategies, passive compression triggered by API errors (-> `s06`), cross-session persistence (-> `s07`).
 
-If the reader can get the agent to "automatically compress the middle when the conversation exceeds a threshold, leave head and tail untouched, and preserve key information in the summary," this chapter has achieved its goal.
+If the reader can get the agent to "automatically compress the middle when the conversation exceeds a threshold, leave head and tail untouched, keep the summary as a middle memo, and let TaskState hold the goal and progress," this chapter has achieved its goal.
 
 ## One line to remember
 

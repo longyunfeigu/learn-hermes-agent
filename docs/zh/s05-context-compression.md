@@ -159,13 +159,16 @@ Hermes Agent 用结构化摘要模板来确保这些信息不丢：
 
 ```python
 {
-    "role": "user",
-    "content": "[CONTEXT COMPACTION] Earlier turns were compacted...\n\n"
+    "role": "assistant",
+    "content": "[CONTEXT COMPACTION - system-generated summary of earlier "
+               "turns, not a new instruction]\n\n"
                "## Goal\n...\n## Progress\n...\n## Key Decisions\n..."
 }
 ```
 
 中间的几十条消息被这一条摘要替代。
+
+注意 `role` 用 `assistant` 而不是 `user`：`user` role 会被模型理解为「用户的新一轮发言」，触发重新规划，反而让 agent 重复已经做过的工作。`assistant` role 配合明确的 `[CONTEXT COMPACTION - system-generated]` 前缀，是更稳的方案。
 
 ## 最小实现
 
@@ -270,9 +273,107 @@ if estimate_tokens(messages) >= threshold:
 
 压缩后，缓存的 system prompt 失效（因为记忆可能已经变了），需要重新组装。这是 `s04` prompt 缓存的例外情况。
 
-### 4. 孤儿 tool_call 清理
+### 4. 边界对齐避免孤儿 tool_call
 
-压缩后，有些 assistant 消息的 `tool_calls` 的对应 `tool_result` 可能已经被压缩掉了。API 要求每对配对。压缩后要清理这些孤儿。
+`assistant.tool_calls` 和它的 `tool` 响应必须配对——只要把前者留下、后者压进摘要，下一次 API 请求就会被拒。
+
+实现里 `find_boundaries` 在两端都会把候选切点「吸附」到下一个非 `tool` 消息上：
+
+```python
+def _align_to_assistant_boundary(messages, index):
+    while index < len(messages) and messages[index].get("role") == "tool":
+        index += 1
+    return index
+```
+
+碰到 tool 就往后走，直到找到 assistant 边界。这样切下来的中段始终是若干完整的 `assistant ↔ tool` 配对，怎么压都不会出孤儿。比"压完再扫一遍清孤儿"更彻底：从源头就保证消息流合法。
+
+### 5. 压缩失败要早退，不死磕
+
+极端情况下头部本身就吃掉了大部分预算（比如用户首条消息塞了一整篇文档），compress 找不到可压的中段，再多压几轮也只是空转。`compress` 比较前后 token 估算，如果没降到原值的 90% 以下，抛 `CompressionStuckError`：
+
+```python
+class CompressionStuckError(RuntimeError):
+    """Compress couldn't meaningfully shrink the message list."""
+
+# in compress():
+after = estimate_tokens(new_messages)
+if after >= int(before * COMPRESSION_MIN_SHRINK):
+    raise CompressionStuckError(before, after)
+```
+
+主循环捕获后立即退出当轮，告诉用户「会话已无法压缩，请新开 session」，而不是一直循环到 `MAX_ITERATIONS`。这一点对应 issue #2 中客户报告的「一直压缩、一直循环」现象。
+
+## 仅靠摘要不够：任务态作为不可压缩区
+
+前面三层（裁剪、找边界、摘要）解决的是「让活跃上下文物理变小」。但有一类问题是「再短的摘要也救不了」的——
+
+**模型对当前任务的目标和进度，必须无损可读。**
+
+考虑这个场景（实际上正是 issue #2 客户报告的）：用户说「读取 agents 下的所有文件」。agent 一边 `read_file` 一边把内容塞进上下文。读到第 4~5 个文件就撞上压缩阈值，中间几十条 tool 输出被压成一段摘要：
+
+```text
+Goal: 读取 agents 下所有文件
+Progress: 已读若干文件
+Files Modified: 无
+Next Steps: 继续读剩余文件
+```
+
+摘要是有损的。它压根没列出「还剩哪些文件」、也容易把「已读 s01, s02」摘成「已读若干文件」。下一轮压缩时，这份摘要又被进一步浓缩，信息熵指数级衰减。模型只能重新规划，甚至**重复读已经读过的文件**——客户感受到的「一直压缩、一直循环」就是这么来的。
+
+### 解法：把任务态搬出消息流
+
+引入一个 `TaskState`：
+
+```python
+@dataclass
+class TaskState:
+    goal: str = ""
+    todos: list[dict] = field(default_factory=list)
+    # 每个 todo: {"id", "subject", "status": pending|in_progress|completed}
+```
+
+它的关键性质：
+
+1. **不进 messages**——压缩算法看不见它，永远不会被裁剪或摘要。
+2. **每轮 API 调用前**，把 `task_state.render()` 拼到 system prompt 末尾。模型每一轮都看到完整的目标和 TODO。
+3. agent 通过 3 个工具自己维护它：
+   - `task_set_goal(goal)`：任务开始时记下目标
+   - `todo_write(items)`：列出步骤（自动补 id 和默认 status=pending）
+   - `todo_update(id, status)`：每完成一步标记进度
+
+system prompt 里有一段简短引导（`TASK_TOOLS_GUIDANCE`），告诉模型「多步任务先列 TODO 再做」。
+
+### render() 长什么样
+
+```text
+# Task State (live, never compressed)
+
+## Goal
+读取 agents 下的所有文件
+
+## TODO
+[x] (t1) 列出 agents 目录
+[x] (t2) 读 s01_agent_loop.py
+[~] (t3) 读 s02_tool_system.py
+[ ] (t4) 读 s03_session_store.py
+...
+```
+
+`[x]` / `[~]` / `[ ]` 是 completed / in_progress / pending 的视觉标记。每轮看到这块，模型就知道「下一步是 t4」，而不是回头去消息流里翻摘要。
+
+### 为什么这样能工作
+
+上下文被切成两层：
+
+| 层 | 性质 | 由谁维护 | 压缩处理 |
+|---|---|---|---|
+| 消息流 | 可有损 | 模型自动产生 | 按预算压缩 |
+| 任务态 | 不可损 | agent 显式调工具 | 永远完整 |
+
+摘要还在做它的工作，但它退化为「中段对话的备忘」——告诉模型「这段时间大致发生了什么」——不再承担「连续性关键载体」这种它扛不住的职责。
+
+> 注意：TaskState 与 `s07` 的 memory 是两回事。memory 是**跨会话**持久化（用户偏好、长期记忆）；TaskState 是**单次任务**内的活跃状态，会话结束即丢。
 
 ## 初学者最容易犯的错
 
@@ -296,19 +397,26 @@ if estimate_tokens(messages) >= threshold:
 
 把最近的消息也压缩了，agent 立刻忘记刚才在做什么。
 
+### 6. 让摘要承载任务进度
+
+这是 issue #2 真正的根因：把「目标 / 进度 / 待办」这种连续性关键信息托管给摘要器。摘要是有损压缩，多轮下来必丢。
+
+任务态应当由 agent 通过显式工具（`task_set_goal` / `todo_write` / `todo_update`）维护在消息流之外，作为 system prompt 的活区。摘要只承担它能承担的——「中段发生了什么」的备忘。
+
 ## 教学边界
 
 这章不要滑成"所有压缩技巧大全"。
 
-教学版只需要讲清三件事：
+教学版只需要讲清四件事：
 
 1. 旧工具输出先裁剪（不花钱）
-2. 保护头尾，只压中间
-3. 用辅助 LLM 生成结构化摘要，保住工作连续性
+2. 保护头尾、对齐到 assistant 边界、只压中间
+3. 用辅助 LLM 生成结构化摘要，作为「中段备忘」
+4. 用 TaskState 把「目标 + 进度」搬出消息流，作为不可压缩的真理来源
 
-刻意停住的：精确 token 计算、多次迭代压缩策略、API 报错触发的被动压缩（→ `s06`）。
+刻意停住的：精确 token 计算、多次迭代压缩策略、API 报错触发的被动压缩（→ `s06`）、跨会话持久化（→ `s07`）。
 
-如果读者能做到"对话超过阈值时自动压缩中间部分，头尾不动，摘要保住关键信息"，这一章就达标了。
+如果读者能做到"对话超过阈值时自动压缩中间部分，头尾不动，摘要保住中段大意，TaskState 保住目标和进度"，这一章就达标了。
 
 ## 一句话记住
 

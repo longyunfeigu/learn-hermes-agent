@@ -4,7 +4,7 @@
 
 > *The agent doesn't just execute tasks -- it extracts patterns from experience, turning "one-off solutions" into "reusable skills for next time." This is the most distinctive mechanism that sets Hermes Agent apart from other agent frameworks.*
 
-![Skill Creation Loop](../../illustrations/s21-skill-creation/01-flowchart-creation-loop.png)
+![Skill Creation Loop](../../illustrations/en/s21-skill-creation/01-flowchart-creation-loop.png)
 
 ## What Problem Does This Chapter Solve
 

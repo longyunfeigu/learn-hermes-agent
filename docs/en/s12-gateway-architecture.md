@@ -4,7 +4,7 @@
 
 > *CLI is a one-on-one chat between you and the agent. The Gateway lets the same agent serve users across a dozen platforms simultaneously. The core loop hasn't changed a single line -- what changed is where messages come from and where replies go.*
 
-![Multi-Platform Message Routing](../../illustrations/s12-gateway/01-framework-routing.png)
+![Multi-Platform Message Routing](../../illustrations/en/s12-gateway/01-framework-routing.png)
 
 ## What problem does this chapter solve
 

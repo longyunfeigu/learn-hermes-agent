@@ -30,7 +30,7 @@ So this chapter must establish a principle first:
 
 **Only information that remains valuable across sessions and cannot be easily inferred from the current project state belongs in memory.**
 
-![MEMORY.md vs USER.md](../../illustrations/s07-memory-system/01-comparison-memory-types.png)
+![MEMORY.md vs USER.md](../../illustrations/en/s07-memory-system/01-comparison-memory-types.png)
 
 ## Key terms explained
 

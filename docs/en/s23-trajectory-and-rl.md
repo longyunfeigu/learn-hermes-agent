@@ -4,7 +4,7 @@
 
 > *s20-s22 enabled the agent to learn at runtime -- updating memory, creating skills, attaching hooks. This chapter enables the agent to evolve offline -- turning conversation trajectories into training data and using reinforcement learning to train the next generation of models.*
 
-![Trajectory and RL Pipeline](../../illustrations/s23-trajectory-rl/01-flowchart-rl-pipeline.png)
+![Trajectory and RL Pipeline](../../illustrations/en/s23-trajectory-rl/01-flowchart-rl-pipeline.png)
 
 ## What Problem Does This Chapter Solve
 

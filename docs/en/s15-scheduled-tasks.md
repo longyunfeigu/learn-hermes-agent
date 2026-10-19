@@ -4,7 +4,7 @@
 
 > *The agents from s01-s14 are purely reactive -- they only act when a user sends a message. This chapter teaches the agent to "remember what to do in the future" and take action when the time comes.*
 
-![Scheduled Task Lifecycle](../../illustrations/s15-scheduled-tasks/01-flowchart-task-lifecycle.png)
+![Scheduled Task Lifecycle](../../illustrations/en/s15-scheduled-tasks/01-flowchart-task-lifecycle.png)
 
 ## What problem does this chapter solve
 

@@ -59,7 +59,7 @@ Why cache? Two reasons:
 1. No need to re-read files and concatenate strings every time
 2. Anthropic's prompt caching requires the system prompt to stay unchanged across turns. If it changes, the cache is invalidated and costs go up
 
-![System Prompt Six-Layer Assembly](../../illustrations/s04-prompt-builder/01-infographic-six-layers.png)
+![System Prompt Six-Layer Assembly](../../illustrations/en/s04-prompt-builder/01-infographic-six-layers.png)
 
 ## Minimal Mental Model
 
@@ -195,7 +195,7 @@ class AIAgent:
 
 Assembled once, never rebuilt afterward. Only a context compression event clears the cache and triggers a rebuild.
 
-![Prompt Caching Strategy](../../illustrations/s04-prompt-builder/02-flowchart-cache-strategy.png)
+![Prompt Caching Strategy](../../illustrations/en/s04-prompt-builder/02-flowchart-cache-strategy.png)
 
 ## Unique Designs in Hermes Agent
 

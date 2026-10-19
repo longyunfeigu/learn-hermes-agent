@@ -24,7 +24,7 @@ But many failures do not mean "the task has truly failed." They only mean:
 
 Hermes Agent does not use a simple try/except + retry. It first classifies the error, then selects a recovery strategy based on the classification. And because it supports 200+ models across multiple providers, the error landscape is far wider than a single-provider agent.
 
-![Error Classification and Recovery](../../illustrations/s06-error-recovery/01-flowchart-error-classification.png)
+![Error Classification and Recovery](../../illustrations/en/s06-error-recovery/01-flowchart-error-classification.png)
 
 ## Key terms explained
 

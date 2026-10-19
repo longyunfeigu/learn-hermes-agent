@@ -22,7 +22,7 @@ So starting from this chapter:
 
 But the Hermes Agent permission system is unlike most agent frameworks. It does not have a generic `deny / allow / ask` pipeline. Instead, it performs pattern matching specifically on **terminal commands** -- because among all tools, the terminal is the most dangerous one.
 
-![Dangerous Command Detection](../../illustrations/s09-permission-system/01-flowchart-permission-check.png)
+![Dangerous Command Detection](../../illustrations/en/s09-permission-system/01-flowchart-permission-check.png)
 
 ## Key terms explained
 

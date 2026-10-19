@@ -4,7 +4,7 @@
 
 > *The agent from s01-s17 has been running in a bare `input()`/`print()` terminal. For a real user-facing experience, you need streaming output, progress feedback, slash commands -- and a web panel so you can manage it without opening a terminal.*
 
-![CLI and Web Dual Interface](../../illustrations/s19-cli-web/01-comparison-cli-web.png)
+![CLI and Web Dual Interface](../../illustrations/en/s19-cli-web/01-comparison-cli-web.png)
 
 ## What problem does this chapter solve
 

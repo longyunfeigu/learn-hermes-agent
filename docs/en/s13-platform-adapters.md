@@ -4,7 +4,7 @@
 
 > *s12 explained why you need adapters. This chapter shows you how to write one.*
 
-![Platform Adapter Pattern](../../illustrations/s13-platform-adapters/01-framework-adapter-pattern.png)
+![Platform Adapter Pattern](../../illustrations/en/s13-platform-adapters/01-framework-adapter-pattern.png)
 
 ## What problem does this chapter solve
 

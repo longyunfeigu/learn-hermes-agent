@@ -4,7 +4,7 @@
 
 > *s26 taught how to quantify "good or bad." This chapter assembles that measurement capability into an automated optimization loop: collect feedback, mutate, evaluate, select, deploy. A complete pipeline, from inputting a skill name to outputting a better version.*
 
-![Optimization Loop](../../illustrations/s27-optimization-deploy/01-flowchart-optimization-loop.png)
+![Optimization Loop](../../illustrations/en/s27-optimization-deploy/01-flowchart-optimization-loop.png)
 
 ## What Problem Does This Chapter Solve
 

@@ -32,7 +32,7 @@ It has a start time, an end time, and a unique ID. All messages in the conversat
 In CLI mode, from the moment you launch to the moment you exit is one session.  
 In Gateway mode, the continuous conversation within a single chat window is one session.
 
-![SQLite Default vs WAL Mode](../../illustrations/s03-session-store/01-comparison-wal.png)
+![SQLite Default vs WAL Mode](../../illustrations/en/s03-session-store/01-comparison-wal.png)
 
 ### What Is WAL Mode
 
@@ -108,7 +108,7 @@ Every session has a `source` field indicating which entry point the message came
 
 This lets you filter sessions by platform: "show only Telegram conversations."
 
-![Session Persistence Lifecycle](../../illustrations/s03-session-store/02-flowchart-session-lifecycle.png)
+![Session Persistence Lifecycle](../../illustrations/en/s03-session-store/02-flowchart-session-lifecycle.png)
 
 ## Minimal Mental Model
 

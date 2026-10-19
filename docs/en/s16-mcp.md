@@ -4,7 +4,7 @@
 
 > *Built-in tools live in your codebase; MCP tools come from external processes. But to the agent, both kinds of tools are used in exactly the same way.*
 
-![MCP Client-Server Protocol](../../illustrations/s16-mcp/01-framework-mcp-protocol.png)
+![MCP Client-Server Protocol](../../illustrations/en/s16-mcp/01-framework-mcp-protocol.png)
 
 ## What problem does this chapter solve
 

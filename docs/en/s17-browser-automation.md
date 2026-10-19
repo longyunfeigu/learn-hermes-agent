@@ -4,7 +4,7 @@
 
 > *The terminal lets the agent operate the file system; the browser lets the agent operate web pages. What the agent sees is not HTML, but a semantic tree describing "what on the page can be clicked."*
 
-![Browser Automation and Accessibility Tree](../../illustrations/s17-browser/01-flowchart-accessibility-tree.png)
+![Browser Automation and Accessibility Tree](../../illustrations/en/s17-browser/01-flowchart-accessibility-tree.png)
 
 ## What problem does this chapter solve
 

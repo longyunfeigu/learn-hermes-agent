@@ -4,7 +4,7 @@
 
 > *Before improving anything, learn to measure it. This chapter builds the evaluation infrastructure: how to generate test data, how to score agent output, and how to use hard constraints to block bad changes.*
 
-![Evaluation System Components](../../illustrations/s26-evaluation-system/01-framework-evaluation-components.png)
+![Evaluation System Components](../../illustrations/en/s26-evaluation-system/01-framework-evaluation-components.png)
 
 ## What Problem Does This Chapter Solve
 

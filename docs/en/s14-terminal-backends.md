@@ -4,7 +4,7 @@
 
 > *Tools call the terminal to execute commands. But where the command runs -- locally, in Docker, or on a remote machine via SSH -- is something the tool doesn't need to know.*
 
-![Terminal Backend Abstraction](../../illustrations/s14-terminal-backends/01-framework-backend-abstraction.png)
+![Terminal Backend Abstraction](../../illustrations/en/s14-terminal-backends/01-framework-backend-abstraction.png)
 
 ## What problem does this chapter solve
 

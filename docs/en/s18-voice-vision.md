@@ -4,7 +4,7 @@
 
 > *The primary model handles thinking and conversation; auxiliary models handle "seeing" and "hearing." They use different models, go through different providers, and don't affect each other.*
 
-![Main Model + Auxiliary Models](../../illustrations/s18-voice-vision/01-framework-dual-model.png)
+![Main Model + Auxiliary Models](../../illustrations/en/s18-voice-vision/01-framework-dual-model.png)
 
 ## What problem does this chapter solve
 

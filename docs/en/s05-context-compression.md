@@ -50,7 +50,7 @@ It means:
 
 > Representing information in a shorter form while preserving what is actually needed to continue working.
 
-![Context Compression Three Layers](../../illustrations/s05-context-compression/01-infographic-three-layers.png)
+![Context Compression Three Layers](../../illustrations/en/s05-context-compression/01-infographic-three-layers.png)
 
 ## Minimal mental model
 
@@ -94,7 +94,7 @@ new messages = [head] + [summary] + [tail]
 
 These three layers are progressive: Layer 1 is the cheapest (free), Layer 2 is a boundary calculation, and Layer 3 is where the LLM is actually called.
 
-![Before vs After Compression](../../illustrations/s05-context-compression/02-comparison-before-after.png)
+![Before vs After Compression](../../illustrations/en/s05-context-compression/02-comparison-before-after.png)
 
 ## What must survive compression
 

@@ -14,7 +14,7 @@ Key insight: adding a tool should not require changing the loop or any central c
 
 ## The Solution
 
-![Tool System Import Chain](../../illustrations/s02-tool-system/01-framework-import-chain.png)
+![Tool System Import Chain](../../illustrations/en/s02-tool-system/01-framework-import-chain.png)
 
 Hermes Agent splits the tool system into three layers, connected by an import chain:
 
@@ -87,7 +87,7 @@ discover_mcp_tools()
 
 `importlib.import_module("tools.web_tools")` has the same effect as writing `import tools.web_tools` directly, except the module name can be a string variable -- so it can be placed in a list and imported in a loop. Adding a new tool only requires adding one string to the list.
 
-![Tool Registration and Dispatch](../../illustrations/s02-tool-system/02-flowchart-dispatch.png)
+![Tool Registration and Dispatch](../../illustrations/en/s02-tool-system/02-flowchart-dispatch.png)
 
 The overall flow:
 

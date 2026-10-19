@@ -57,7 +57,7 @@ Every chapter starts with a minimal but correct implementation, then tells you "
 
 Don't try to absorb all the complexity in one pass.
 
-![Hermes Agent Five-Layer Architecture](../../illustrations/s00-architecture/01-framework-five-layers.png)
+![Hermes Agent Five-Layer Architecture](../../illustrations/en/s00-architecture/01-framework-five-layers.png)
 
 ## The Five-Layer Architecture of Hermes Agent
 
@@ -117,7 +117,7 @@ This is what sets Hermes Agent apart from most agent tutorials: it is not "one l
 
 **Persistence Layer**: Conversation history lives in SQLite (not flat files), supporting concurrent reads/writes and full-text search. Memory lives in MEMORY.md / USER.md. Skills live in a skills directory. All this state survives process restarts.
 
-![Message Flow Path](../../illustrations/s00-architecture/02-flowchart-message-flow.png)
+![Message Flow Path](../../illustrations/en/s00-architecture/02-flowchart-message-flow.png)
 
 ## How a Message Flows Through the System
 

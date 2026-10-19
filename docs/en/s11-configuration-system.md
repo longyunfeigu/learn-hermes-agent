@@ -22,7 +22,7 @@ This is the problem the configuration system solves:
 
 **Extract "how the agent runs" from the code into external configuration that is declarative, mergeable, and isolatable.**
 
-![Configuration Sources and Priority](../../illustrations/s11-configuration-system/01-framework-config-sources.png)
+![Configuration Sources and Priority](../../illustrations/en/s11-configuration-system/01-framework-config-sources.png)
 
 ## Key terminology
 

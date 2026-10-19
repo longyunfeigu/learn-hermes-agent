@@ -4,7 +4,7 @@
 
 > *Users rarely say "remember this for me" on their own. The agent needs to notice what's worth remembering and what can be distilled into a skill -- then quietly handle it in the background without interrupting the user's work.*
 
-![Background Review Process](../../illustrations/s20-background-review/01-flowchart-background-review.png)
+![Background Review Process](../../illustrations/en/s20-background-review/01-flowchart-background-review.png)
 
 ## What Problem Does This Chapter Solve
 

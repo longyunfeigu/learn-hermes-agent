@@ -59,7 +59,7 @@ Parent agent budget = 90
 
 The sub-agent doesn't get "another 90." It draws from the parent agent's wallet. That is why it is called a budget.
 
-![Iteration Budget Concept](../../illustrations/s01-agent-loop/06-infographic-budget-chalkboard.png)
+![Iteration Budget Concept](../../illustrations/en/s01-agent-loop/06-infographic-budget-chalkboard.png)
 
 ### finish_reason
 
@@ -113,11 +113,11 @@ Why maintain two copies?
 
 In one sentence: **messages is the draft; api_messages is the letter you actually mail out.**
 
-![messages vs api_messages](../../illustrations/s01-agent-loop/07-comparison-messages-chalkboard.png)
+![messages vs api_messages](../../illustrations/en/s01-agent-loop/07-comparison-messages-chalkboard.png)
 
 You can ignore this distinction in the first teaching version, but you should know it exists.
 
-![Agent Loop Core Flow](../../illustrations/s01-agent-loop/05-flowchart-chalkboard.png)
+![Agent Loop Core Flow](../../illustrations/en/s01-agent-loop/05-flowchart-chalkboard.png)
 
 ## Minimal Mental Model
 

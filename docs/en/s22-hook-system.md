@@ -4,7 +4,7 @@
 
 > *By s21, the agent's core capabilities and self-evolution mechanisms are all in place. But if you want the agent to "run a self-check every time it starts" or "add an audit layer before every tool call" -- you don't need to modify core code. You just need to attach a hook.*
 
-![Lifecycle Hook System](../../illustrations/s22-hook-system/01-framework-lifecycle-hooks.png)
+![Lifecycle Hook System](../../illustrations/en/s22-hook-system/01-framework-lifecycle-hooks.png)
 
 ## What Problem Does This Chapter Solve
 

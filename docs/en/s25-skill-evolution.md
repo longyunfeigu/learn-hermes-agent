@@ -4,7 +4,7 @@
 
 > *s23 improves the model itself through training. s25-s27 take a different approach -- they leave the model untouched and only change the text it receives. Skill instructions, tool descriptions, system prompts, even tool code -- all of it is text, and all of it can be systematically optimized.*
 
-![Self-Evolution Formula](../../illustrations/s25-skill-evolution/01-infographic-evolution-formula.png)
+![Self-Evolution Formula](../../illustrations/en/s25-skill-evolution/01-infographic-evolution-formula.png)
 
 ## What Problem Does This Chapter Solve
 

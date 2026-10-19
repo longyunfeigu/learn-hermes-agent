@@ -29,7 +29,7 @@ This is the problem subagents solve:
 
 **Run localized tasks in isolated contexts, and bring back only the essential results. Keep the parent agent's context clean.**
 
-![Parent-Child Agent Delegation](../../illustrations/s10-subagent-delegation/01-framework-parent-child.png)
+![Parent-Child Agent Delegation](../../illustrations/en/s10-subagent-delegation/01-framework-parent-child.png)
 
 ## Key terminology
 

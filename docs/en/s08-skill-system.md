@@ -26,7 +26,7 @@ That is why a skill system is needed:
 
 **Let the agent codify successful approaches into files and load them on demand the next time it encounters a similar task.**
 
-![Tool vs Skill vs MCP](../../illustrations/s08-skill-system/01-comparison-tool-skill-mcp.png)
+![Tool vs Skill vs MCP](../../illustrations/en/s08-skill-system/01-comparison-tool-skill-mcp.png)
 
 ## Key terms explained
 

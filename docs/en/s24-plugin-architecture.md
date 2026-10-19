@@ -4,7 +4,7 @@
 
 > *The built-in memory uses files, but some people want Honcho for user modeling, others want mem0 for semantic search. The plugin system lets everyone use what they prefer without changing a single line of core code.*
 
-![Plugin Architecture](../../illustrations/s24-plugin-architecture/01-framework-plugin-interface.png)
+![Plugin Architecture](../../illustrations/en/s24-plugin-architecture/01-framework-plugin-interface.png)
 
 ## What Problem Does This Chapter Solve
 
